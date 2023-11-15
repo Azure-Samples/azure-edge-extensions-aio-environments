@@ -1,5 +1,5 @@
 #! /bin/bash
-LOCATION="eastus"
+LOCATION=$1
 az deployment sub create \
    --name arc-footprint-deployment \
    --location $LOCATION \
