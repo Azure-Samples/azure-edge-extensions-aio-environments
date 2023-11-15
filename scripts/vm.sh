@@ -7,4 +7,4 @@ az deployment sub create \
    --parameters   resourceGroupName="rg-vm-vhdx-arc-footprint-new" \
                   galleryName="igarcfootprint" \
                   imageDefinitionName="id-arc-footprint" \
-                  imageVersion="latest" \
+                  imageVersion="latest"
