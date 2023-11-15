@@ -1,21 +1,22 @@
-param location string
+param location string = resourceGroup().location
+param applicationName string
 param identityId string
 param stagingResourceGroupName string
 //param imageVersionNumber string
 param runOutputName string = 'arc_footprint_image'
 param galleryName string
 param imageDefinitionName string
+param imageBuilderName string
 
 param imageVersion string = 'latest'
 var versionSuffix = imageVersion == 'latest' ? '' : '/versions/${imageVersion}'
 
-
-var publisher = 'MicrosoftWindowsServer'
-var offer = 'WindowsServer'
-var sku = '2022-datacenter-g2'
-var version = 'latest'
-var architecture = 'x64'
-var vmSize = 'Standard_D2s_v3'
+param publisher string
+param offer string
+param sku string
+param version string
+param architecture string
+param vmSize string
 
 output azureImageBuilderName string = azureImageBuilder.name
 
@@ -69,10 +70,9 @@ resource galleryNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-
 }
 
 resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
-  name: 'arc-footprint-image'
+  name: imageBuilderName
   location: location
-  tags: {
-  }
+  tags: {}
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
@@ -85,6 +85,7 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
       {
         type: 'PowerShell'
         inline: [
+          '$ApplicationName = ${applicationName}'
           loadTextContent('./install-aio.ps1')
         ]
       }

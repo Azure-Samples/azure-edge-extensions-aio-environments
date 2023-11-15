@@ -12,14 +12,36 @@ on:
         - eastus2
         - westus
         - westeurope
-      tags:
-        description: 'Test scenario tags'
-        required: false
-        type: boolean
-      environment:
-        description: 'Environment to run tests against'
-        type: environment
-        required: false
+      publisher:
+        description: 'OS Image Publisher'
+        type: string
+        default: 'MicrosoftWindowsServer'
+        required: true
+      offer:
+        description: 'OS Image Offer'
+        type: string
+        default: 'WindowsServer'
+        required: true
+      sku:
+        description: 'OS Image Sku'
+        type: string
+        default: '2022-datacenter-g2'
+        required: true
+      version:
+        description: 'OS Image Version'
+        type: string
+        default: 'latest'
+        required: true
+      architecture:
+        description: 'OS Image Architecture'
+        type: string
+        default: 'x64'
+        required: true
+      vmSize:
+        description: 'VM Size'
+        type: string
+        default: 'Standard_D2s_v3'
+        required: true
 jobs:
   Build-VM-VHDX:
     runs-on: ubuntu-latest
@@ -37,4 +59,4 @@ jobs:
         inlineScript: |
           chmod +x $GITHUB_WORKSPACE/scripts/vm.sh
           cd $GITHUB_WORKSPACE/scripts
-          sh ./vm.sh ${{ inputs.location }}
+          sh ./vm.sh ${{ inputs.location }} ${{ inputs.publisher }} ${{ inputs.offer }} ${{ inputs.sku }} ${{ inputs.version }} ${{ inputs.architecture }} ${{ inputs.vmSize }}

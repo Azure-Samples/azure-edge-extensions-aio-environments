@@ -39,8 +39,7 @@ resource galleryAccessRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-p
   }
 }
 
-
-resource customRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-01-preview' =  {
+resource customRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-01-preview' = {
   name: guid(resourceGroup().id, userAssignedIdentityResource.id, galleryAccessRole.id)
   properties: {
     principalId: userAssignedIdentityResource.properties.principalId
@@ -48,4 +47,3 @@ resource customRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-0
     roleDefinitionId: galleryAccessRole.id
   }
 }
-
