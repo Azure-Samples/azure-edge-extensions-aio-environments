@@ -18,6 +18,7 @@ jobs:
         inlineScript: |
           chmod +x $GITHUB_WORKSPACE/scripts/vm.sh
           cd $GITHUB_WORKSPACE/scripts
+          LOCATION="eastus"
           az deployment sub create \
             --name arc-footprint-deployment \
             --location $LOCATION \
