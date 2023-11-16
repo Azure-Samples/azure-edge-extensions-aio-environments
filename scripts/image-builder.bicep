@@ -86,7 +86,7 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
         type: 'PowerShell'
         runElevated: true
         inline: [
-          format(loadTextContent('./install-aio.ps1'), applicationName, subscription().subscriptionId, tenant().tenantId, resourceGroup().name, location, 'aks-${applicationName}')
+          format(loadTextContent('./install-aio2.ps1'), applicationName, subscription().subscriptionId, tenant().tenantId, resourceGroup().name, location, 'aks-${applicationName}')
         ]
       }
     ]
