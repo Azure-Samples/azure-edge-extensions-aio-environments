@@ -90,7 +90,7 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
           '$TenantId = "${tenant().tenantId}"'
           '$ResourceGroupName = "${resourceGroup().name}"'
           '$Location = "${location}"'
-          'AksClusterName = "aks-${applicationName}"'
+          '$AksClusterName = "aks-${applicationName}"'
           loadTextContent('./install-aio.ps1')
         ]
       }
