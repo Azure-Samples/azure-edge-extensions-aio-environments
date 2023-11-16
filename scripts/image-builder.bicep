@@ -86,7 +86,7 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
         type: 'PowerShell'
         inline: [
           '$ApplicationName = "${applicationName}"'
-          '$SubsriptionId = "${subscription().subscriptionId}"'
+          '$SubscriptionId = "${subscription().subscriptionId}"'
           '$TenantId = "${tenant().tenantId}"'
           '$ResourceGroupName = "${resourceGroup().name}"'
           '$Location = "${location}"'
