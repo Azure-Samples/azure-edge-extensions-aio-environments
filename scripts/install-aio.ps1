@@ -1,6 +1,13 @@
 Write-Host "Installing AIO"
 Write-Host "Yet to be implemented"
 
+$ApplicationName = {0}
+$SubscriptionId = {1}
+$TenantId = {2}
+$ResourceGroupName = {3}
+$Location = {4}
+$AksClusterName = {5}
+
 $ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; Remove-Item .\AzureCLI.msi
 
 $url = "https://raw.githubusercontent.com/Azure/AKS-Edge/main/tools/scripts/AksEdgeQuickStart/AksEdgeQuickStartForAio.ps1"
