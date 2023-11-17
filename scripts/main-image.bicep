@@ -48,7 +48,6 @@ module imageBuilder 'image-builder.bicep' = {
   scope: resourceGroup
   params: {
     location: location
-    applicationName: applicationName
     identityId: imageIdentityModule.outputs.userAssignedIdentity.id
     stagingResourceGroupName: '${resourceGroup.name}-staging'
     galleryName: galleryName

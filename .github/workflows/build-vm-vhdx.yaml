@@ -40,7 +40,7 @@ on:
       vmSize:
         description: 'VM Size'
         type: string
-        default: 'Standard_D2s_v5'
+        default: 'Standard_D4s_v5'
         required: true
 jobs:
   Build-VM-VHDX:
@@ -57,6 +57,18 @@ jobs:
       uses: azure/CLI@v1
       with:
         inlineScript: |
-          chmod +x $GITHUB_WORKSPACE/scripts/vm.sh
-          cd $GITHUB_WORKSPACE/scripts
-          sh ./vm.sh ${{ inputs.location }} ${{ inputs.publisher }} ${{ inputs.offer }} ${{ inputs.sku }} ${{ inputs.version }} ${{ inputs.architecture }} ${{ inputs.vmSize }}
+          az deployment sub create \
+          --name arc-footprint-deployment \
+          --location ${{ inputs.location }} \
+          --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
+          --parameters applicationName="vm-vhdx-arc-footprint" \
+                        galleryName="igarcfootprint" \
+                        imageDefinitionName="id-arc-footprint" \
+                        imageBuilderName="arc-footprint-image" \
+                        imageVersion="latest" \
+                        publisher=${{ inputs.publisher }} \
+                        offer=${{ inputs.offer }} \
+                        sku=${{ inputs.sku }} \
+                        version=${{ inputs.version }}\
+                        architecture=${{ inputs.architecture }} \
+                        vmSize=${{ inputs.vmSize }}

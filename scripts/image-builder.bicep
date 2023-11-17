@@ -1,5 +1,4 @@
 param location string = resourceGroup().location
-param applicationName string
 param identityId string
 param stagingResourceGroupName string
 //param imageVersionNumber string
@@ -57,11 +56,11 @@ resource galleryNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-
     architecture: architecture
     recommended: {
       vCPUs: {
-        min: 1
+        min: 4
         max: 16
       }
       memory: {
-        min: 1
+        min: 16
         max: 32
       }
     }
@@ -83,17 +82,45 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
     buildTimeoutInMinutes: 120
     customize: [
       {
+        type: 'File'
+        name: 'DownloadAIOScript'
+        sourceUri: 'https://raw.githubusercontent.com/Azure/AKS-Edge/main/tools/scripts/AksEdgeQuickStart/AksEdgeQuickStart.ps1'
+        destination: 'c:\\scripts\\AksEdgeQuickStart.ps1'
+      }
+      {
         type: 'PowerShell'
+        name: 'InstallAzureCLI'
         runElevated: true
         inline: [
-          format(loadTextContent('./install-aio2.ps1'), applicationName, subscription().subscriptionId, tenant().tenantId, resourceGroup().name, location, 'aks-${applicationName}')
+          '$ProgressPreference = \'SilentlyContinue\'; Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList \'/I AzureCLI.msi /quiet\'; Remove-Item .\\AzureCLI.msi'
+        ]
+      }
+      {
+        type: 'WindowsRestart'
+        name: 'StartAKSEdgeInstall-EnableHyperV'
+        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStart.ps1'
+      }
+      {
+        type: 'PowerShell'
+        name: 'ResumeInstall'
+        runElevated: true
+        inline: [
+          'c:\\scripts\\AksEdgeQuickStart.ps1'
+        ]
+      }
+      {
+        type: 'PowerShell'
+        runElevated: true
+        name: 'ValidateInstall'
+        inline: [
+          'kubectl get pods -A'
+          'Kubectl get nodes'
         ]
       }
     ]
     distribute: [
       {
         type: 'SharedImage'
-        excludeFromLatest: false
         runOutputName: runOutputName
         galleryImageId: '${galleryNameImageDefinition.id}${versionSuffix}'
         replicationRegions: [
