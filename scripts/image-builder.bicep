@@ -1,5 +1,8 @@
 param location string = resourceGroup().location
+param applicationName string
 param identityId string
+param spClientId string
+param spClientSecret string
 param stagingResourceGroupName string
 //param imageVersionNumber string
 param runOutputName string = 'arc_footprint_image'
@@ -84,6 +87,12 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
       {
         type: 'File'
         name: 'DownloadAIOScript'
+        sourceUri: 'https://raw.githubusercontent.com/Azure/AKS-Edge/main/tools/scripts/AksEdgeQuickStart/AksEdgeQuickStartForAio.ps1'
+        destination: 'c:\\scripts\\AksEdgeQuickStartForAio.ps1'
+      }
+      {
+        type: 'File'
+        name: 'DownloadScript'
         sourceUri: 'https://raw.githubusercontent.com/Azure/AKS-Edge/main/tools/scripts/AksEdgeQuickStart/AksEdgeQuickStart.ps1'
         destination: 'c:\\scripts\\AksEdgeQuickStart.ps1'
       }
@@ -96,16 +105,25 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
         ]
       }
       {
+        type: 'PowerShell'
+        runElevated: true
+        name: 'AzLogin'
+        inline: [
+          'az login --service-principal -u ${spClientId} -p ${spClientSecret} --tenant ${subscription().tenantId}'
+          'az account show'
+        ]
+      }
+      {
         type: 'WindowsRestart'
         name: 'StartAKSEdgeInstall-EnableHyperV'
-        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStart.ps1'
+        restartCommand: 'powershell.exe -Command {c:\\scripts\\AksEdgeQuickStart.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks${applicationName}}'
       }
       {
         type: 'PowerShell'
         name: 'ResumeInstall'
         runElevated: true
         inline: [
-          'c:\\scripts\\AksEdgeQuickStart.ps1'
+          'c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks${applicationName}'
         ]
       }
       {

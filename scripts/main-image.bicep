@@ -3,6 +3,8 @@ targetScope = 'subscription'
 param location string = deployment().location
 param applicationName string
 var resourceGroupName = 'rg-${applicationName}'
+param spClientId string
+param spClientSecret string
 
 param galleryName string
 param imageDefinitionName string
@@ -48,7 +50,10 @@ module imageBuilder 'image-builder.bicep' = {
   scope: resourceGroup
   params: {
     location: location
+    applicationName: applicationName
     identityId: imageIdentityModule.outputs.userAssignedIdentity.id
+    spClientId: spClientId
+    spClientSecret: spClientSecret
     stagingResourceGroupName: '${resourceGroup.name}-staging'
     galleryName: galleryName
     imageDefinitionName: imageDefinitionName

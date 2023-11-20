@@ -62,6 +62,8 @@ jobs:
           --location ${{ inputs.location }} \
           --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
           --parameters applicationName="vm-vhdx-arc-footprint" \
+                        spClientId=${{ secrets.AZURE_CREDENTIALS.clientId }} \
+                        spClientSecret=${{ secrets.AZURE_CREDENTIALS.clientSecret }} \
                         galleryName="igarcfootprint" \
                         imageDefinitionName="id-arc-footprint" \
                         imageBuilderName="arc-footprint-image" \
