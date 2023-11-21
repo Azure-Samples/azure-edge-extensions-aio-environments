@@ -1,17 +1,22 @@
 param name string
 param location string = resourceGroup().location
+param exists bool
 
 output userAssignedIdentity object = {
-  id: userAssignedIdentityResource.id
-  principalId: userAssignedIdentityResource.properties.principalId
+  id: (exists) ? userAssignedIdentityExistingResource.id: userAssignedIdentityResource.id
+  principalId: (exists) ? userAssignedIdentityExistingResource.properties.principalId : userAssignedIdentityResource.properties.principalId
   principalType: 'ServicePrincipal'
-  clientId: userAssignedIdentityResource.properties.clientId
+  clientId: (exists) ? userAssignedIdentityExistingResource.properties.clientId : userAssignedIdentityResource.properties.clientId
   name: name
 }
 
-resource userAssignedIdentityResource 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
+resource userAssignedIdentityResource 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = if(!exists){
   name: name
   location: location
+}
+
+resource userAssignedIdentityExistingResource 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = if(exists) {
+  name: name
 }
 
 resource galleryAccessRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-preview' = {
@@ -40,9 +45,9 @@ resource galleryAccessRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-p
 }
 
 resource customRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-01-preview' = {
-  name: guid(resourceGroup().id, userAssignedIdentityResource.id, galleryAccessRole.id)
+  name: guid(resourceGroup().id, (exists) ? userAssignedIdentityExistingResource.id: userAssignedIdentityResource.id, galleryAccessRole.id)
   properties: {
-    principalId: userAssignedIdentityResource.properties.principalId
+    principalId: (exists) ? userAssignedIdentityExistingResource.properties.principalId : userAssignedIdentityResource.properties.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: galleryAccessRole.id
   }

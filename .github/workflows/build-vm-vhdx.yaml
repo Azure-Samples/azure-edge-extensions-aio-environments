@@ -40,7 +40,7 @@ on:
       vmSize:
         description: 'VM Size'
         type: string
-        default: 'Standard_D4s_v5'
+        default: 'Standard_D8s_v5'
         required: true
 jobs:
   Build-VM-VHDX:

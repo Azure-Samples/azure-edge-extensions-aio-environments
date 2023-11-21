@@ -17,6 +17,7 @@ param sku string = '2022-datacenter-g2'
 param version string = 'latest'
 param architecture string = 'x64'
 param vmSize string = 'Standard_D2s_v3'
+param exists bool = false
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName
@@ -29,6 +30,7 @@ module imageIdentityModule 'user-assigned-identity.bicep' = {
   params: {
     location: location
     name: 'id-image-identity'
+    exists: exists
   }
 }
 
@@ -54,7 +56,7 @@ module imageBuilder 'image-builder.bicep' = {
     identityId: imageIdentityModule.outputs.userAssignedIdentity.id
     spClientId: spClientId
     spClientSecret: spClientSecret
-    stagingResourceGroupName: '${resourceGroup.name}-staging'
+    stagingResourceGroupName: '${imageBuilderName}-staging'
     galleryName: galleryName
     imageDefinitionName: imageDefinitionName
     imageBuilderName: imageBuilderName
@@ -66,5 +68,6 @@ module imageBuilder 'image-builder.bicep' = {
     version: version
     architecture: architecture
     vmSize: vmSize
+    exists: exists
   }
 }

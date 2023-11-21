@@ -19,18 +19,65 @@ param sku string
 param version string
 param architecture string
 param vmSize string
+param exists bool
 
 output azureImageBuilderName string = azureImageBuilder.name
 
-resource gallery 'Microsoft.Compute/galleries@2021-10-01' = {
+resource gallery 'Microsoft.Compute/galleries@2021-10-01' = if(!exists) {
   name: galleryName
   location: location
   properties: {}
   tags: {}
 }
 
-resource galleryNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-01' = {
+resource galleryNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-01' = if(!exists) {
   parent: gallery
+  name: imageDefinitionName
+  location: location
+  properties: {
+    osType: 'Windows'
+    osState: 'Generalized'
+    identifier: {
+      publisher: publisher
+      offer: offer
+      sku: sku
+    }
+    hyperVGeneration: 'V2'
+    features: [
+      {
+        name: 'securityType'
+        value: 'TrustedLaunch'
+      }
+      {
+        name: 'diskControllerTypes'
+        value: 'SCSI'
+      }
+      {
+        name: 'isAcceleratedNetworkSupported'
+        value: 'true'
+      }
+    ]
+    architecture: architecture
+    recommended: {
+      vCPUs: {
+        min: 4
+        max: 16
+      }
+      memory: {
+        min: 16
+        max: 32
+      }
+    }
+  }
+  tags: {}
+}
+
+resource galleryExisting 'Microsoft.Compute/galleries@2021-10-01' existing = if(exists) {
+  name: galleryName
+}
+
+resource galleryExistingNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-01' = if(exists) {
+  parent: galleryExisting
   name: imageDefinitionName
   location: location
   properties: {
@@ -111,19 +158,22 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
         inline: [
           'az login --service-principal -u ${spClientId} -p ${spClientSecret} --tenant ${subscription().tenantId}'
           'az account show'
+          'az extension add --name connectedk8s'
+          'Invoke-WebRequest -Uri https://storage.googleapis.com/kubernetes-release/release/stable.txt'
         ]
       }
       {
         type: 'WindowsRestart'
         name: 'StartAKSEdgeInstall-EnableHyperV'
-        restartCommand: 'powershell.exe -Command {c:\\scripts\\AksEdgeQuickStart.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks${applicationName}}'
+        restartTimeout: '15m'
+        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStart.ps1 -SubscriptionId=${subscription().subscriptionId} -TenantId=${subscription().tenantId} -Location=${location} -ResourceGroupName=${resourceGroup().name} -ClusterName=aks${applicationName}'
       }
       {
         type: 'PowerShell'
         name: 'ResumeInstall'
         runElevated: true
         inline: [
-          'c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks${applicationName}'
+          '$ConfirmPreference = \'None\'; c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks${applicationName}'
         ]
       }
       {
@@ -140,7 +190,7 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
       {
         type: 'SharedImage'
         runOutputName: runOutputName
-        galleryImageId: '${galleryNameImageDefinition.id}${versionSuffix}'
+        galleryImageId: '${ ((exists) ? galleryExistingNameImageDefinition.id : galleryNameImageDefinition.id)}${versionSuffix}'
         replicationRegions: [
           location
         ]
