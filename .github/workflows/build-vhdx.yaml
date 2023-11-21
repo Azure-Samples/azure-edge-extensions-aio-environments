@@ -1,4 +1,4 @@
-name: Build VM and VHDX
+name: Build VHDX
 on: 
   workflow_dispatch:
     inputs:
@@ -43,7 +43,7 @@ on:
         default: 'Standard_D8s_v5'
         required: true
 jobs:
-  Build-VM-VHDX:
+  Build-VHDX:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -74,3 +74,4 @@ jobs:
                         version=${{ inputs.version }}\
                         architecture=${{ inputs.architecture }} \
                         vmSize=${{ inputs.vmSize }}
+                        exists=true

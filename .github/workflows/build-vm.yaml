@@ -1,0 +1,30 @@
+name: Build VM and VHDX
+on: 
+  workflow_dispatch:
+    inputs:
+      location:
+        description: 'Azure Resource Location'
+        required: true
+        default: 'eastus'
+        type: choice
+        options:
+        - eastus
+        - eastus2
+        - westus
+        - westeurope
+jobs:
+  Build-VM:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Log in with Azure
+      uses: azure/login@v1
+      with:
+        creds: '${{ secrets.AZURE_CREDENTIALS }}'
+    - name: Azure CLI script
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          subscriptionId=$(az account show --query id -o tsv)

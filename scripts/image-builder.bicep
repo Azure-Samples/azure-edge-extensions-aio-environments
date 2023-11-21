@@ -166,14 +166,14 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
         type: 'WindowsRestart'
         name: 'StartAKSEdgeInstall-EnableHyperV'
         restartTimeout: '15m'
-        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStart.ps1 -SubscriptionId=${subscription().subscriptionId} -TenantId=${subscription().tenantId} -Location=${location} -ResourceGroupName=${resourceGroup().name} -ClusterName=aks${applicationName}'
+        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStart.ps1 -SubscriptionId=${subscription().subscriptionId} -TenantId=${subscription().tenantId} -Location=${location} -ResourceGroupName=${resourceGroup().name} -ClusterName=aks-${applicationName}'
       }
       {
         type: 'PowerShell'
         name: 'ResumeInstall'
         runElevated: true
         inline: [
-          '$ConfirmPreference = \'None\'; c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks${applicationName}'
+          '$ConfirmPreference = \'None\'; c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks-${applicationName}'
         ]
       }
       {
@@ -185,6 +185,32 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
           'Kubectl get nodes'
         ]
       }
+      {
+        type: 'PowerShell'
+        runElevated: true
+        name: 'InstallAzureCLIExtension'
+        inline: [
+          'az extension add --name azure-iot-ops'
+        ]
+      }
+      // {
+      //   type: 'PowerShell'
+      //   runElevated: true
+      //   name: 'InstallAIO'
+      //   inline: [
+      //     'az iot ops init --cluster aks-${applicationName} -g ${resourceGroup().name} --kv-id $(az keyvault create -n kv-${applicationName} -g ${resourceGroup().name} -o tsv --query id)'
+      //   ]
+      // }
+      // optional inbound firewall rule for MQTT
+      // {
+      //   type: 'PowerShell'
+      //   runElevated: true
+      //   name: 'InstallAIO'
+      //   inline: [
+      //     'New-NetFirewallRule -DisplayName "Azure IoT MQ" -Direction Inbound -Protocol TCP -LocalPort 8883 -Action Allow'
+      //     '$IpAddress = kubectl get svc aio-mq-dmqtt-frontend -n azure-iot-operations -o jsonpath=\'{.status.loadBalancer.ingress[0].ip}\'; netsh interface portproxy add v4tov4 listenport=8883 listenaddress=0.0.0.0 connectport=8883 connectaddress=$IpAddress'
+      //   ]
+      // }
     ]
     distribute: [
       {
