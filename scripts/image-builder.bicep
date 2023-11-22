@@ -1,7 +1,7 @@
 param location string = resourceGroup().location
-param applicationName string
 param identityId string
 param spClientId string
+@secure()
 param spClientSecret string
 param stagingResourceGroupName string
 //param imageVersionNumber string
@@ -20,6 +20,7 @@ param version string
 param architecture string
 param vmSize string
 param exists bool
+var arcClusterName = 'aks-${imageTemplateName}'
 
 output azureImageTemplateName string = azureImageBuilderTemplate.name
 
@@ -76,46 +77,9 @@ resource galleryExisting 'Microsoft.Compute/galleries@2021-10-01' existing = if(
   name: galleryName
 }
 
-resource galleryExistingNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-01' = if(exists) {
+resource galleryExistingNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-01' existing = if(exists) {
   parent: galleryExisting
   name: imageDefinitionName
-  location: location
-  properties: {
-    osType: 'Windows'
-    osState: 'Generalized'
-    identifier: {
-      publisher: publisher
-      offer: offer
-      sku: sku
-    }
-    hyperVGeneration: 'V2'
-    features: [
-      {
-        name: 'securityType'
-        value: 'TrustedLaunch'
-      }
-      {
-        name: 'diskControllerTypes'
-        value: 'SCSI'
-      }
-      {
-        name: 'isAcceleratedNetworkSupported'
-        value: 'true'
-      }
-    ]
-    architecture: architecture
-    recommended: {
-      vCPUs: {
-        min: 4
-        max: 16
-      }
-      memory: {
-        min: 16
-        max: 32
-      }
-    }
-  }
-  tags: {}
 }
 
 resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
@@ -161,14 +125,14 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         type: 'WindowsRestart'
         name: 'StartAKSEdgeInstall-EnableHyperV'
         restartTimeout: '15m'
-        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks-${applicationName}'
+        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName ${arcClusterName}'
       }
       {
         type: 'PowerShell'
         name: 'ResumeInstall'
         runElevated: true
         inline: [
-          '$ConfirmPreference = \'None\'; c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks-${applicationName}'
+          '$ConfirmPreference = \'None\'; c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName ${arcClusterName}'
         ]
       }
       {
@@ -193,7 +157,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         runElevated: true
         name: 'InstallAIO'
         inline: [
-          'az iot ops init --cluster aks-${applicationName} -g ${resourceGroup().name} --kv-id $(az keyvault create -n kv-${applicationName} -g ${resourceGroup().name} -o tsv --query id)'
+          'az iot ops init --cluster ${arcClusterName} -g ${resourceGroup().name} --kv-id $(az keyvault create -n kv-${imageTemplateName} -g ${resourceGroup().name} -o tsv --query id)'
         ]
       }
       // optional inbound firewall rule for MQTT

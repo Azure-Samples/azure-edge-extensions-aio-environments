@@ -52,3 +52,16 @@ resource customRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-0
     roleDefinitionId: galleryAccessRole.id
   }
 }
+
+resource contributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  name: 'b24988ac-6180-42a0-ab88-20f7382dd24c' //'Contributor'
+}
+
+resource contributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-01-preview' = {
+  name: guid(subscription().id, (identityExists) ? userAssignedIdentityExistingResource.id: userAssignedIdentityResource.id, contributorRoleDefinition.id)
+  properties: {
+    principalId: (identityExists) ? userAssignedIdentityExistingResource.properties.principalId : userAssignedIdentityResource.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: contributorRoleDefinition.id
+  }
+}

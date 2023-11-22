@@ -1,9 +1,9 @@
 targetScope = 'subscription'
 
 param location string = deployment().location
-param applicationName string
 param resourceGroupName string
 param spClientId string
+@secure()
 param spClientSecret string
 
 param galleryName string
@@ -35,25 +35,11 @@ module imageIdentityModule 'user-assigned-identity.bicep' = {
   }
 }
 
-resource contributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
-  name: 'b24988ac-6180-42a0-ab88-20f7382dd24c' //'Contributor'
-}
-
-resource contributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-01-preview' = {
-  name: guid(subscription().id, resourceGroupName, contributorRoleDefinition.id)
-  properties: {
-    principalId: imageIdentityModule.outputs.userAssignedIdentity.principalId
-    principalType: 'ServicePrincipal'
-    roleDefinitionId: contributorRoleDefinition.id
-  }
-}
-
 module imageBuilder 'image-builder.bicep' = {
   name: 'imageBuilder'
   scope: resourceGroup
   params: {
     location: location
-    applicationName: applicationName
     identityId: imageIdentityModule.outputs.userAssignedIdentity.id
     spClientId: spClientId
     spClientSecret: spClientSecret

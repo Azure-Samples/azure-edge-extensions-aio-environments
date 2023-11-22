@@ -93,13 +93,12 @@ jobs:
           --name fpdeployment${{github.run_id}} \
           --location ${{ inputs.location }} \
           --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
-          --parameters applicationName="vm-vhdx-arc-footprint" \
-                        spClientId=${{ secrets.AZURE_CLIENT_ID }} \
+          --parameters spClientId=${{ secrets.AZURE_CLIENT_ID }} \
                         spClientSecret=${{ secrets.AZURE_CLIENT_SECRET }} \
                         resourceGroupName=${{ inputs.resourceGroup }} \
                         galleryName=${{ inputs.computeGallery }} \
-                        imageDefinitionName="id-arc-footprint" \
-                        imageTemplateName="image-${{github.run_id}}" \
+                        imageDefinitionName="WinServer" \
+                        imageTemplateName="aksEEAIO-${{github.run_id}}" \
                         imageVersion="latest" \
                         publisher=${{ inputs.publisher }} \
                         offer=${{ inputs.offer }} \

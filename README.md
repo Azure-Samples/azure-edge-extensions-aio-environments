@@ -13,6 +13,9 @@ az ad sp create-for-rbac --name "myApp" --role owner \
                                 --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group} \
                                 --json-auth
 ```
+### Arc Custom Locations
+In order to enable [Arc custom locations](https://learn.microsoft.com/en-us/azure/azure-arc/platform/conceptual-custom-locations),  the service principle created for the workflow must have the ability to read Applications in Microsoft Graph. 
+
 ## Workflows
 
 ### Image Creation
