@@ -42,6 +42,17 @@ on:
         type: string
         default: 'Standard_D8s_v5'
         required: true
+      computeGallery:
+        description: 'Azure Compute Gallery Name'
+        type: string
+        default: footprintgallery
+        required: true
+      resourceGroup:
+        description: 'Azure Resource Group'
+        type: string
+        default: footgrint-rg
+        required: true
+
 jobs:
   Build-VHDX:
     runs-on: ubuntu-latest
@@ -53,25 +64,48 @@ jobs:
       uses: azure/login@v1
       with:
         creds: '${{ secrets.AZURE_CREDENTIALS }}'
-    - name: Azure CLI script
+    - name: Run az deploy
       uses: azure/CLI@v1
       with:
         inlineScript: |
+          #! /bin/bash
+
+          GALLERY="${{ inputs.computeGallery }}"
+          RG="${{ inputs.resourceGroup }}"
+          GALLERY_EXISTS=false
+          IDENTITY_EXISTS=false
+
+          echo "Checking if things exists..."
+
+          if [ -n "$(az sig show --gallery-name $GALLERY -g $RG --query id -o tsv 2>/dev/null)" ]; then
+            echo "Gallery $GALLERY found in $RG. Use existing..."
+            GALLERY_EXISTS=true
+          fi
+
+          if [ -n "$(az identity show -n ${{ inputs.computeGallery }}-identity -g $RG --query id -o tsv 2>/dev/null)" ]; then
+            echo "Identity ${{ inputs.computeGallery }}-identity found in $RG. Use existing..."
+            IDENTITY_EXISTS=true
+          fi     
+
+          echo "Running az deployment sub create..."
+
           az deployment sub create \
           --name arc-footprint-deployment \
           --location ${{ inputs.location }} \
           --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
           --parameters applicationName="vm-vhdx-arc-footprint" \
-                        spClientId=${{ secrets.AZURE_CREDENTIALS.clientId }} \
-                        spClientSecret=${{ secrets.AZURE_CREDENTIALS.clientSecret }} \
-                        galleryName="igarcfootprint" \
+                        spClientId=${{ secrets.AZURE_CLIENT_ID }} \
+                        spClientSecret=${{ secrets.AZURE_CLIENT_SECRET }} \
+                        resourceGroupName=${{ inputs.resourceGroup }} \
+                        galleryName=${{ inputs.computeGallery }} \
                         imageDefinitionName="id-arc-footprint" \
-                        imageBuilderName="arc-footprint-image" \
+                        imageTemplateName="image-${{github.run_id}}" \
                         imageVersion="latest" \
                         publisher=${{ inputs.publisher }} \
                         offer=${{ inputs.offer }} \
                         sku=${{ inputs.sku }} \
                         version=${{ inputs.version }}\
                         architecture=${{ inputs.architecture }} \
-                        vmSize=${{ inputs.vmSize }}
-                        exists=true
+                        vmSize=${{ inputs.vmSize }} \
+                        exists=$GALLERY_EXISTS \
+                        identityExists=$IDENTITY_EXISTS --debug

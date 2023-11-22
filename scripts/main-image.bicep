@@ -2,13 +2,13 @@ targetScope = 'subscription'
 
 param location string = deployment().location
 param applicationName string
-var resourceGroupName = 'rg-${applicationName}'
+param resourceGroupName string
 param spClientId string
 param spClientSecret string
 
 param galleryName string
 param imageDefinitionName string
-param imageBuilderName string
+param imageTemplateName string
 param imageVersion string
 
 param publisher string = 'MicrosoftWindowsServer'
@@ -18,6 +18,7 @@ param version string = 'latest'
 param architecture string = 'x64'
 param vmSize string = 'Standard_D2s_v3'
 param exists bool = false
+param identityExists bool = false
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName
@@ -29,8 +30,8 @@ module imageIdentityModule 'user-assigned-identity.bicep' = {
   scope: resourceGroup
   params: {
     location: location
-    name: 'id-image-identity'
-    exists: exists
+    name: '${galleryName}-identity'
+    identityExists: identityExists
   }
 }
 
@@ -56,10 +57,10 @@ module imageBuilder 'image-builder.bicep' = {
     identityId: imageIdentityModule.outputs.userAssignedIdentity.id
     spClientId: spClientId
     spClientSecret: spClientSecret
-    stagingResourceGroupName: '${imageBuilderName}-staging'
+    stagingResourceGroupName: '${imageTemplateName}-staging'
     galleryName: galleryName
     imageDefinitionName: imageDefinitionName
-    imageBuilderName: imageBuilderName
+    imageTemplateName: imageTemplateName
     imageVersion: imageVersion
     //imageVersionNumber: '1.0.0' //TODO get versionnumber from script and increment by 1
     publisher: publisher

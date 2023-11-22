@@ -8,7 +8,7 @@ param stagingResourceGroupName string
 param runOutputName string = 'arc_footprint_image'
 param galleryName string
 param imageDefinitionName string
-param imageBuilderName string
+param imageTemplateName string
 
 param imageVersion string = 'latest'
 var versionSuffix = imageVersion == 'latest' ? '' : '/versions/${imageVersion}'
@@ -21,7 +21,7 @@ param architecture string
 param vmSize string
 param exists bool
 
-output azureImageBuilderName string = azureImageBuilder.name
+output azureImageTemplateName string = azureImageBuilderTemplate.name
 
 resource gallery 'Microsoft.Compute/galleries@2021-10-01' = if(!exists) {
   name: galleryName
@@ -118,8 +118,8 @@ resource galleryExistingNameImageDefinition 'Microsoft.Compute/galleries/images@
   tags: {}
 }
 
-resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
-  name: imageBuilderName
+resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
+  name: imageTemplateName
   location: location
   tags: {}
   identity: {
@@ -138,12 +138,6 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
         destination: 'c:\\scripts\\AksEdgeQuickStartForAio.ps1'
       }
       {
-        type: 'File'
-        name: 'DownloadScript'
-        sourceUri: 'https://raw.githubusercontent.com/Azure/AKS-Edge/main/tools/scripts/AksEdgeQuickStart/AksEdgeQuickStart.ps1'
-        destination: 'c:\\scripts\\AksEdgeQuickStart.ps1'
-      }
-      {
         type: 'PowerShell'
         name: 'InstallAzureCLI'
         runElevated: true
@@ -154,19 +148,20 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
       {
         type: 'PowerShell'
         runElevated: true
-        name: 'AzLogin'
+        name: 'AzSetup'
         inline: [
           'az login --service-principal -u ${spClientId} -p ${spClientSecret} --tenant ${subscription().tenantId}'
           'az account show'
           'az extension add --name connectedk8s'
-          'Invoke-WebRequest -Uri https://storage.googleapis.com/kubernetes-release/release/stable.txt'
+          'Invoke-WebRequest -Uri https://secure.globalsign.net/cacert/Root-R1.crt -OutFile c:\\globalsignR1.crt'
+          'Import-Certificate -FilePath c:\\globalsignR1.crt -CertStoreLocation Cert:\\LocalMachine\\Root'
         ]
       }
       {
         type: 'WindowsRestart'
         name: 'StartAKSEdgeInstall-EnableHyperV'
         restartTimeout: '15m'
-        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStart.ps1 -SubscriptionId=${subscription().subscriptionId} -TenantId=${subscription().tenantId} -Location=${location} -ResourceGroupName=${resourceGroup().name} -ClusterName=aks-${applicationName}'
+        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName aks-${applicationName}'
       }
       {
         type: 'PowerShell'
@@ -193,14 +188,14 @@ resource azureImageBuilder 'Microsoft.VirtualMachineImages/imageTemplates@2022-0
           'az extension add --name azure-iot-ops'
         ]
       }
-      // {
-      //   type: 'PowerShell'
-      //   runElevated: true
-      //   name: 'InstallAIO'
-      //   inline: [
-      //     'az iot ops init --cluster aks-${applicationName} -g ${resourceGroup().name} --kv-id $(az keyvault create -n kv-${applicationName} -g ${resourceGroup().name} -o tsv --query id)'
-      //   ]
-      // }
+      {
+        type: 'PowerShell'
+        runElevated: true
+        name: 'InstallAIO'
+        inline: [
+          'az iot ops init --cluster aks-${applicationName} -g ${resourceGroup().name} --kv-id $(az keyvault create -n kv-${applicationName} -g ${resourceGroup().name} -o tsv --query id)'
+        ]
+      }
       // optional inbound firewall rule for MQTT
       // {
       //   type: 'PowerShell'
@@ -250,7 +245,7 @@ resource runImageTemplate 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
   }
   properties: {
     azPowerShellVersion: '9.7'
-    scriptContent: 'Invoke-AzResourceAction -ResourceName ${azureImageBuilder.name} -ResourceGroupName ${resourceGroup().name} -ResourceType Microsoft.VirtualMachineImages/imageTemplates -Action Run -Force'
+    scriptContent: 'Invoke-AzResourceAction -ResourceName ${azureImageBuilderTemplate.name} -ResourceGroupName ${resourceGroup().name} -ResourceType Microsoft.VirtualMachineImages/imageTemplates -Action Run -Force'
     retentionInterval: 'P1D'
   }
 }

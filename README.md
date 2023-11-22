@@ -4,6 +4,15 @@ This repository sets up the infrastructure to create vhdx images for the Arc mem
 Because of the nature of efficiency, customer demand a low memory footprint to save costs in terms of hardware and devices.
 This infrastructure enables you to install instrumentation tools and collect memory dumps components.
 
+## Pre-requisites
+
+```sh
+# Create an sp for gh actions. Create a secret named AZURE_CREDENTIALS from the output of the following command
+# Owner role required to create identities
+az ad sp create-for-rbac --name "myApp" --role owner \
+                                --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group} \
+                                --json-auth
+```
 ## Workflows
 
 ### Image Creation
