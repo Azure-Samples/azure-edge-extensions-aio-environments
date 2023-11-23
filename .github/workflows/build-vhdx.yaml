@@ -63,9 +63,9 @@ jobs:
           ARCHITECTURE="$(echo ${{ inputs.configuration }} | cut -d'+' -f6)"
           VMSIZE="$(echo ${{ inputs.configuration }} | cut -d'+' -f7)"
           OSTYPE="$(echo ${{ inputs.configuration }} | cut -d'+' -f8)"
-          echo "CONFIGURATIONNAME=$CONFIGURATIONNAME" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          echo "VMSIZE=$VMSIZE" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-
+          echo "CONFIGURATIONNAME=$CONFIGURATIONNAME" >> "$GITHUB_ENV"
+          echo "VMSIZE=$VMSIZE" >> "$GITHUB_ENV"
+        
           echo "ConfigurationName: $CONFIGURATIONNAME"
           echo "Publisher: $PUBLISHER"
           echo "Offer: $OFFER"
