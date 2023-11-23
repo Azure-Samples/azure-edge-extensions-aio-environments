@@ -55,7 +55,7 @@ jobs:
       with:
         inlineScript: |
           #! /bin/bash
-          CONFIGURATIONNAME="$(echo ${{ inputs.configuration }}" | cut -d'+' -f1)"
+          CONFIGURATIONNAME="$(echo ${{ inputs.configuration }} | cut -d'+' -f1)"
           PUBLISHER="$(echo ${{ inputs.configuration }} | cut -d'+' -f2)"
           OFFER="$(echo ${{ inputs.configuration }} | cut -d'+' -f3)"
           SKU="$(echo ${{ inputs.configuration }} | cut -d'+' -f4)"
