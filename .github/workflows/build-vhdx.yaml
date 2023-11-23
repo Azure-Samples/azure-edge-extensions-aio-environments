@@ -120,3 +120,4 @@ jobs:
       imageDefinitionName: ${{ needs.Build-VHDX.outputs.CONFIGURATIONNAME }}
       vmName: ${{ needs.Build-VHDX.outputs.CONFIGURATIONNAME }}
       vmSize: ${{ needs.Build-VHDX.outputs.VMSIZE }}
+    secrets: inherit
