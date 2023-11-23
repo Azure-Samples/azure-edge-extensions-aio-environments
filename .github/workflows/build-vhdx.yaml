@@ -39,6 +39,9 @@ on:
 jobs:
   Build-VHDX:
     runs-on: ubuntu-latest
+    outputs:
+      configurationName: ${{ steps.createImage.outputs.configurationName }}
+      vmSize: ${{ steps.createImage.outputs.vmSize }}
     steps:
     - uses: actions/checkout@v2
       with:
@@ -47,7 +50,8 @@ jobs:
       uses: azure/login@v1
       with:
         creds: '${{ secrets.AZURE_CREDENTIALS }}'
-    - name: Run az deploy
+    - name: Run az deployment for image creation
+      id: createImage
       run: |
         #! /bin/bash
         CONFIGURATIONNAME="$(echo ${{ inputs.configuration }} | cut -d'+' -f1)"
@@ -58,8 +62,8 @@ jobs:
         ARCHITECTURE="$(echo ${{ inputs.configuration }} | cut -d'+' -f6)"
         VMSIZE="$(echo ${{ inputs.configuration }} | cut -d'+' -f7)"
         OSTYPE="$(echo ${{ inputs.configuration }} | cut -d'+' -f8)"
-        echo "CONFIGURATIONNAME=$CONFIGURATIONNAME" >> "$GITHUB_OUTPUT"
-        echo "VMSIZE=$VMSIZE" >> "$GITHUB_OUTPUT"
+        echo "configurationName=$CONFIGURATIONNAME" >> $GITHUB_OUTPUT
+        echo "vmSize=$VMSIZE" >> "$GITHUB_OUTPUT"
       
         echo "ConfigurationName: $CONFIGURATIONNAME"
         echo "Publisher: $PUBLISHER"
@@ -117,7 +121,7 @@ jobs:
       location: ${{ inputs.location }}
       resourceGroupName: ${{ inputs.resourceGroupName }}
       computeGalleryName: ${{ inputs.computeGalleryName }}
-      imageDefinitionName: ${{ needs.Build-VHDX.outputs.CONFIGURATIONNAME }}
-      vmName: ${{ needs.Build-VHDX.outputs.CONFIGURATIONNAME }}
-      vmSize: ${{ needs.Build-VHDX.outputs.VMSIZE }}
+      imageDefinitionName: ${{ needs.Build-VHDX.outputs.configurationName }}
+      vmName: ${{ needs.Build-VHDX.outputs.configurationName }}
+      vmSize: ${{ needs.Build-VHDX.outputs.vmSize }}
     secrets: inherit

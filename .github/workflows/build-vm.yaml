@@ -74,7 +74,7 @@ jobs:
         az sig image-version wait --created --resource-group ${{ inputs.resourceGroupName }} \
         --gallery-name ${{ inputs.computeGalleryName }} --gallery-image-definition id-arc-footprint \
         --gallery-image-version 1.0.0
-    - name: Azure CLI script
+    - name: Create VM
       run: |
         subscriptionId=$(az account show --query id -o tsv)
 
