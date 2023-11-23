@@ -24,15 +24,15 @@ on:
       computeGalleryName:
         description: 'Azure Compute Gallery Name'
         type: string
-        default: footprintgallery
+        default: sigarcfootprint
         required: true
       resourceGroupName:
         description: 'Azure Resource Group'
         type: string
-        default: footprint-rg
+        default: rg-arc-footprint
         required: true
       createVm:
-        description: 'Should VM be created'
+        description: 'Create VM from image'
         type: boolean
         default: false
         required: true
@@ -118,7 +118,7 @@ jobs:
       run: |
         echo "Wait for image to be created..."
         az sig image-version wait --created --resource-group ${{ inputs.resourceGroupName }} \
-        --gallery-name ${{ inputs.computeGalleryName }} --gallery-image-definition ${{ env.CONFIGURATIONNAME }} \
+        --gallery-name ${{ inputs.computeGalleryName }} --gallery-image-definition id-arc-footprint \
         --gallery-image-version 1.0.0
     - name: Create VM
       if: ${{ inputs.createVm }}

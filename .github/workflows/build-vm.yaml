@@ -1,4 +1,4 @@
-name: Build VM and VHDX
+name: Build VM
 on:
   workflow_call:
     inputs:
@@ -20,13 +20,6 @@ on:
       vmSize:
         required: true
         type: string
-    secrets:
-      AZURE_CREDENTIALS:
-        required: true
-      VMADMINUSERNAME:
-        required: true
-      VMADMINPASSWORD:
-        required: true 
   workflow_dispatch:
     inputs:
       location:
@@ -41,12 +34,12 @@ on:
         - westeurope
       resourceGroupName:
         description: 'Azure Resource Group Name'
-        default: 'rg-vm-vhdx-arc-footprint'
+        default: 'rg-arc-footprint'
         required: true
         type: string
       computeGalleryName:
         description: 'Azure Shared Image Gallery Name'
-        default: 'igarcfootprint'
+        default: 'sigarcfootprint'
         required: true
         type: string
       imageDefinitionName:
