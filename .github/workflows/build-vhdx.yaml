@@ -136,4 +136,3 @@ jobs:
         imageDefinitionName: ${{ env.CONFIGURATIONNAME }}
         vmName: ${{ env.CONFIGURATIONNAME }}
         vmSize: ${{ env.VMSIZE }}
-      secrets: inherit
