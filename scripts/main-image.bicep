@@ -17,6 +17,7 @@ param sku string = '2022-datacenter-g2'
 param version string = 'latest'
 param architecture string = 'x64'
 param vmSize string = 'Standard_D2s_v3'
+param osType string = 'Windows'
 param exists bool = false
 param identityExists bool = false
 
@@ -55,6 +56,7 @@ module imageBuilder 'image-builder.bicep' = {
     version: version
     architecture: architecture
     vmSize: vmSize
+    osType: osType
     exists: exists
   }
 }

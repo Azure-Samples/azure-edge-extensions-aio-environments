@@ -1,5 +1,32 @@
 name: Build VM and VHDX
-on: 
+on:
+  workflow_call:
+    inputs:
+      location:
+        required: true
+        type: string
+      resourceGroupName:
+        required: true
+        type: string
+      computeGalleryName:
+        required: true
+        type: string
+      imageDefinitionName:
+          required: true
+          type: string
+      vmName:
+        required: true
+        type: string
+      vmSize:
+        required: true
+        type: string
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+      VMADMINUSERNAME:
+        required: true
+      VMADMINPASSWORD:
+        required: true 
   workflow_dispatch:
     inputs:
       location:
@@ -12,6 +39,31 @@ on:
         - eastus2
         - westus
         - westeurope
+      resourceGroupName:
+        description: 'Azure Resource Group Name'
+        default: 'rg-vm-vhdx-arc-footprint'
+        required: true
+        type: string
+      computeGalleryName:
+        description: 'Azure Shared Image Gallery Name'
+        default: 'igarcfootprint'
+        required: true
+        type: string
+      imageDefinitionName:
+        description: 'Image Definition Name'
+        default: 'id-arc-footprint'
+        required: true
+        type: string
+      vmName:
+        description: 'VM Name'
+        default: 'arc-footprint'
+        required: true
+        type: string
+      vmSize:
+        description: 'VM Size'
+        default: 'Standard_D8s_v5'
+        required: true
+        type: string
 jobs:
   Build-VM:
     runs-on: ubuntu-latest
@@ -28,3 +80,26 @@ jobs:
       with:
         inlineScript: |
           subscriptionId=$(az account show --query id -o tsv)
+
+          vmResourceGroup=${{ inputs.resourceGroupName }}
+          galleryName=${{ inputs.computeGalleryName }}
+          imageDefinitionName=${{ inputs.imageDefinitionName }}
+          location=${{ inputs.location }}
+          vmName=${{ inputs.vmName }}
+          vmSize=${{ inputs.vmSize }}
+          adminUsername=${{ secrets.VMADMINUSERNAME }}
+          adminPassword=${{ secrets.VMADMINPASSWORD }}
+
+          imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/$imageDefinitionName"
+
+          az vm create \
+          --resource-group $vmResourceGroup \
+          --name $vmName \
+          --image $imgDef \
+          --size $vmSize \
+          --security-type TrustedLaunch \
+          --enable-secure-boot true \
+          --enable-vtpm true \
+          --admin-username $adminUsername \
+          --admin-password $adminPassword \
+          --generate-ssh-keys

@@ -19,6 +19,7 @@ param sku string
 param version string
 param architecture string
 param vmSize string
+param osType string
 param exists bool
 var arcClusterName = 'aks-${imageTemplateName}'
 
@@ -36,7 +37,7 @@ resource galleryNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-
   name: imageDefinitionName
   location: location
   properties: {
-    osType: 'Windows'
+    osType: osType
     osState: 'Generalized'
     identifier: {
       publisher: publisher

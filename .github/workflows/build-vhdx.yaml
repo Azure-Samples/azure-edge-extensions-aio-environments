@@ -12,47 +12,30 @@ on:
         - eastus2
         - westus
         - westeurope
-      publisher:
-        description: 'OS Image Publisher'
-        type: string
-        default: 'MicrosoftWindowsServer'
+      configuration:
+        description: 'Image Configuration'
         required: true
-      offer:
-        description: 'OS Image Offer'
-        type: string
-        default: 'WindowsServer'
-        required: true
-      sku:
-        description: 'OS Image Sku'
-        type: string
-        default: '2022-datacenter-g2'
-        required: true
-      version:
-        description: 'OS Image Version'
-        type: string
-        default: 'latest'
-        required: true
-      architecture:
-        description: 'OS Image Architecture'
-        type: string
-        default: 'x64'
-        required: true
-      vmSize:
-        description: 'VM Size'
-        type: string
-        default: 'Standard_D8s_v5'
-        required: true
-      computeGallery:
+        default: 'WinServer+MicrosoftWindowsServer+WindowsServer+2022-datacenter-g2+latest+x64+Standard_D8s_v5'
+        type: choice
+        options:
+          - WinServer+MicrosoftWindowsServer+WindowsServer+2022-datacenter-g2+latest+x64+Standard_D8s_v5+Windows
+          - WinIoT+MicrosoftWindowsDesktop+Windows-10+win10-22h2-entn-g2+latest+x64+Standard_D8s_v5+Windows
+          - Linux+canonical+0001-com-ubuntu-server-jammy+22_04-lts-gen2+latest+x64+Standard_D8s_v5+Linux
+      computeGalleryName:
         description: 'Azure Compute Gallery Name'
         type: string
         default: footprintgallery
         required: true
-      resourceGroup:
+      resourceGroupName:
         description: 'Azure Resource Group'
         type: string
-        default: footgrint-rg
+        default: footprint-rg
         required: true
-
+      createVm:
+        description: 'Should VM be created'
+        type: boolean
+        default: false
+        required: true
 jobs:
   Build-VHDX:
     runs-on: ubuntu-latest
@@ -64,14 +47,36 @@ jobs:
       uses: azure/login@v1
       with:
         creds: '${{ secrets.AZURE_CREDENTIALS }}'
+    - name: Log in with Azure
+      run: |
+        az account show
     - name: Run az deploy
       uses: azure/CLI@v1
       with:
         inlineScript: |
           #! /bin/bash
+          CONFIGURATIONNAME="${{ inputs.configuration }}" | cut -d'+' -f1)"
+          PUBLISHER="$(echo ${{ inputs.configuration }} | cut -d'+' -f2)"
+          OFFER="$(echo ${{ inputs.configuration }} | cut -d'+' -f3)"
+          SKU="$(echo ${{ inputs.configuration }} | cut -d'+' -f4)"
+          VERSION="$(echo ${{ inputs.configuration }} | cut -d'+' -f5)"
+          ARCHITECTURE="$(echo ${{ inputs.configuration }} | cut -d'+' -f6)"
+          VMSIZE="$(echo ${{ inputs.configuration }} | cut -d'+' -f7)"
+          OSTYPE="$(echo ${{ inputs.configuration }} | cut -d'+' -f8)"
+          echo "CONFIGURATIONNAME=$CONFIGURATIONNAME" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "VMSIZE=$VMSIZE" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
-          GALLERY="${{ inputs.computeGallery }}"
-          RG="${{ inputs.resourceGroup }}"
+          echo "ConfigurationName: $CONFIGURATIONNAME"
+          echo "Publisher: $PUBLISHER"
+          echo "Offer: $OFFER"
+          echo "Sku: $SKU"
+          echo "Version: $VERSION"
+          echo "Architecture: $ARCHITECTURE"
+          echo "VmSize: $VMSIZE"
+          echo "OsType: $OSTYPE"
+
+          GALLERY="${{ inputs.computeGalleryName }}"
+          RG="${{ inputs.resourceGroupName }}"
           GALLERY_EXISTS=false
           IDENTITY_EXISTS=false
 
@@ -82,29 +87,53 @@ jobs:
             GALLERY_EXISTS=true
           fi
 
-          if [ -n "$(az identity show -n ${{ inputs.computeGallery }}-identity -g $RG --query id -o tsv 2>/dev/null)" ]; then
-            echo "Identity ${{ inputs.computeGallery }}-identity found in $RG. Use existing..."
+          if [ -n "$(az identity show -n ${{ inputs.computeGalleryName }}-identity -g $RG --query id -o tsv 2>/dev/null)" ]; then
+            echo "Identity ${{ inputs.computeGalleryName }}-identity found in $RG. Use existing..."
             IDENTITY_EXISTS=true
           fi     
 
           echo "Running az deployment sub create..."
 
-          az deployment sub create \
-          --name fpdeployment${{github.run_id}} \
-          --location ${{ inputs.location }} \
-          --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
-          --parameters spClientId=${{ secrets.AZURE_CLIENT_ID }} \
-                        spClientSecret=${{ secrets.AZURE_CLIENT_SECRET }} \
-                        resourceGroupName=${{ inputs.resourceGroup }} \
-                        galleryName=${{ inputs.computeGallery }} \
-                        imageDefinitionName="WinServer" \
-                        imageTemplateName="aksEEAIO-${{github.run_id}}" \
-                        imageVersion="latest" \
-                        publisher=${{ inputs.publisher }} \
-                        offer=${{ inputs.offer }} \
-                        sku=${{ inputs.sku }} \
-                        version=${{ inputs.version }}\
-                        architecture=${{ inputs.architecture }} \
-                        vmSize=${{ inputs.vmSize }} \
-                        exists=$GALLERY_EXISTS \
-                        identityExists=$IDENTITY_EXISTS --debug
+          # az deployment sub create \
+          # --name fpdeployment${{github.run_id}} \
+          # --location ${{ inputs.location }} \
+          # --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
+          # --parameters spClientId=${{ secrets.AZURE_CLIENT_ID }} \
+          #               spClientSecret=${{ secrets.AZURE_CLIENT_SECRET }} \
+          #               resourceGroupName=${{ inputs.resourceGroupName }} \
+          #               galleryName=${{ inputs.computeGalleryName }} \
+          #               imageDefinitionName=$CONFIGURATIONNAME \
+          #               imageTemplateName="aksEEAIO-${{github.run_id}}" \
+          #               imageVersion="latest" \
+          #               publisher=$PUBLISHER \
+          #               offer=$OFFER \
+          #               sku=$SKU \
+          #               version=$VERSION\
+          #               architecture=$ARCHITECTURE \
+          #               vmSize=$VMSIZE \
+          #               osType=$OSTYPE \
+          #               exists=$GALLERY_EXISTS \
+          #               identityExists=$IDENTITY_EXISTS --debug
+  # Build-VM:
+  #   runs-on: ubuntu-latest
+  #   if: ${{ inputs.createVm }}
+  #   steps:                 
+    - name: Wait for Image to be created
+      if: ${{ inputs.createVm }}
+      run: |
+        echo "Wait for image to be created..."
+        CONFIGURATIONNAME="${{ inputs.configuration }}" | cut -d'+' -f1)"
+        az sig image-version wait --created --resource-group ${{ inputs.resourceGroupName }} \
+        --gallery-name ${{ inputs.computeGalleryName }} --gallery-image-definition $CONFIGURATIONNAME \
+        --gallery-image-version 1.0.0
+    - name: Create VM
+      if: ${{ inputs.createVm }}
+      uses: ./.github/workflows/build-vm.yml
+      with:
+        location: ${{ inputs.location }}
+        resourceGroupName: ${{ inputs.resourceGroupName }}
+        computeGalleryName: ${{ inputs.computeGalleryName }}
+        imageDefinitionName: ${{ env.CONFIGURATIONNAME }}
+        vmName: ${{ env.CONFIGURATIONNAME }}
+        vmSize: ${{ env.VMSIZE }}
+      secrets: inherit
