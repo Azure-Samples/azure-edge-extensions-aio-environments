@@ -87,7 +87,7 @@ jobs:
         adminUsername=${{ secrets.VMADMINUSERNAME }}
         adminPassword=${{ secrets.VMADMINPASSWORD }}
 
-        imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/$imageDefinitionName"
+        imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/id-arc-footprint"
 
         az vm create \
         --resource-group $vmResourceGroup \
