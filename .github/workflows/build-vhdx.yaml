@@ -122,7 +122,7 @@ jobs:
         --gallery-image-version 1.0.0
     - name: Create VM
       if: ${{ inputs.createVm }}
-      uses: ./.github/workflows/build-vm.yml
+      uses: ./.github/workflows/build-vm.yaml
       with:
         location: ${{ inputs.location }}
         resourceGroupName: ${{ inputs.resourceGroupName }}
