@@ -58,8 +58,8 @@ jobs:
         ARCHITECTURE="$(echo ${{ inputs.configuration }} | cut -d'+' -f6)"
         VMSIZE="$(echo ${{ inputs.configuration }} | cut -d'+' -f7)"
         OSTYPE="$(echo ${{ inputs.configuration }} | cut -d'+' -f8)"
-        echo "CONFIGURATIONNAME=$CONFIGURATIONNAME" >> "$GITHUB_ENV"
-        echo "VMSIZE=$VMSIZE" >> "$GITHUB_ENV"
+        echo "CONFIGURATIONNAME=$CONFIGURATIONNAME" >> "$GITHUB_OUTPUT"
+        echo "VMSIZE=$VMSIZE" >> "$GITHUB_OUTPUT"
       
         echo "ConfigurationName: $CONFIGURATIONNAME"
         echo "Publisher: $PUBLISHER"
@@ -109,24 +109,14 @@ jobs:
         #               osType=$OSTYPE \
         #               exists=$GALLERY_EXISTS \
         #               identityExists=$IDENTITY_EXISTS --debug
-  # Build-VM:
-  #   runs-on: ubuntu-latest
-  #   if: ${{ inputs.createVm }}
-  #   steps:                 
-    - name: Wait for Image to be created
-      if: ${{ inputs.createVm }}
-      run: |
-        echo "Wait for image to be created..."
-        az sig image-version wait --created --resource-group ${{ inputs.resourceGroupName }} \
-        --gallery-name ${{ inputs.computeGalleryName }} --gallery-image-definition id-arc-footprint \
-        --gallery-image-version 1.0.0
-    - name: Create VM
-      if: ${{ inputs.createVm }}
-      uses: ./.github/workflows/build-vm.yaml
-      with:
-        location: ${{ inputs.location }}
-        resourceGroupName: ${{ inputs.resourceGroupName }}
-        computeGalleryName: ${{ inputs.computeGalleryName }}
-        imageDefinitionName: ${{ env.CONFIGURATIONNAME }}
-        vmName: ${{ env.CONFIGURATIONNAME }}
-        vmSize: ${{ env.VMSIZE }}
+  Build-VM:
+    if: ${{ inputs.createVm }}
+    uses: ./.github/workflows/build-vm.yaml
+    needs: Build-VHDX
+    with:
+      location: ${{ inputs.location }}
+      resourceGroupName: ${{ inputs.resourceGroupName }}
+      computeGalleryName: ${{ inputs.computeGalleryName }}
+      imageDefinitionName: ${{ needs.Build-VHDX.outputs.CONFIGURATIONNAME }}
+      vmName: ${{ needs.Build-VHDX.outputs.CONFIGURATIONNAME }}
+      vmSize: ${{ needs.Build-VHDX.outputs.VMSIZE }}

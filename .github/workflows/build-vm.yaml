@@ -68,31 +68,35 @@ jobs:
       uses: azure/login@v1
       with:
         creds: '${{ secrets.AZURE_CREDENTIALS }}'
+    - name: Wait for Image to be created
+      run: |
+        echo "Wait for image to be created..."
+        az sig image-version wait --created --resource-group ${{ inputs.resourceGroupName }} \
+        --gallery-name ${{ inputs.computeGalleryName }} --gallery-image-definition id-arc-footprint \
+        --gallery-image-version 1.0.0
     - name: Azure CLI script
-      uses: azure/CLI@v1
-      with:
-        inlineScript: |
-          subscriptionId=$(az account show --query id -o tsv)
+      run: |
+        subscriptionId=$(az account show --query id -o tsv)
 
-          vmResourceGroup=${{ inputs.resourceGroupName }}
-          galleryName=${{ inputs.computeGalleryName }}
-          imageDefinitionName=${{ inputs.imageDefinitionName }}
-          location=${{ inputs.location }}
-          vmName=${{ inputs.vmName }}
-          vmSize=${{ inputs.vmSize }}
-          adminUsername=${{ secrets.VMADMINUSERNAME }}
-          adminPassword=${{ secrets.VMADMINPASSWORD }}
+        vmResourceGroup=${{ inputs.resourceGroupName }}
+        galleryName=${{ inputs.computeGalleryName }}
+        imageDefinitionName=${{ inputs.imageDefinitionName }}
+        location=${{ inputs.location }}
+        vmName=${{ inputs.vmName }}
+        vmSize=${{ inputs.vmSize }}
+        adminUsername=${{ secrets.VMADMINUSERNAME }}
+        adminPassword=${{ secrets.VMADMINPASSWORD }}
 
-          imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/$imageDefinitionName"
+        imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/$imageDefinitionName"
 
-          az vm create \
-          --resource-group $vmResourceGroup \
-          --name $vmName \
-          --image $imgDef \
-          --size $vmSize \
-          --security-type TrustedLaunch \
-          --enable-secure-boot true \
-          --enable-vtpm true \
-          --admin-username $adminUsername \
-          --admin-password $adminPassword \
-          --generate-ssh-keys
+        az vm create \
+        --resource-group $vmResourceGroup \
+        --name $vmName \
+        --image $imgDef \
+        --size $vmSize \
+        --security-type TrustedLaunch \
+        --enable-secure-boot true \
+        --enable-vtpm true \
+        --admin-username $adminUsername \
+        --admin-password $adminPassword \
+        --generate-ssh-keys
