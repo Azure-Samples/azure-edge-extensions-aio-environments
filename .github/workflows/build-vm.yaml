@@ -72,11 +72,13 @@ jobs:
       run: |
         echo "Wait for image to be created..."
         az sig image-version wait --created --resource-group ${{ inputs.resourceGroupName }} \
-        --gallery-name ${{ inputs.computeGalleryName }} --gallery-image-definition id-arc-footprint \
+        --gallery-name ${{ inputs.computeGalleryName }} --gallery-image-definition ${{ inputs.imageDefinitionName }} \
         --gallery-image-version 1.0.0
     - name: Create VM
       run: |
         subscriptionId=$(az account show --query id -o tsv)
+        tenantId=$(az account show --query tenantId -o tsv)
+        clusterName=aksEEAIO-${{github.run_id}}
 
         vmResourceGroup=${{ inputs.resourceGroupName }}
         galleryName=${{ inputs.computeGalleryName }}
@@ -87,16 +89,29 @@ jobs:
         adminUsername=${{ secrets.VMADMINUSERNAME }}
         adminPassword=${{ secrets.VMADMINPASSWORD }}
 
-        imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/id-arc-footprint"
+        imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/imageDefinitionName"
 
         az vm create \
-        --resource-group $vmResourceGroup \
-        --name $vmName \
-        --image $imgDef \
-        --size $vmSize \
-        --security-type TrustedLaunch \
-        --enable-secure-boot true \
-        --enable-vtpm true \
-        --admin-username $adminUsername \
-        --admin-password $adminPassword \
-        --generate-ssh-keys
+          --resource-group $vmResourceGroup \
+          --name $vmName \
+          --image $imgDef \
+          --size $vmSize \
+          --security-type TrustedLaunch \
+          --enable-secure-boot true \
+          --enable-vtpm true \
+          --admin-username $adminUsername \
+          --admin-password $adminPassword \
+          --generate-ssh-keys
+        
+        az vm extension set \
+          --resource-group rg-vm-vhdx-arc-footprint \
+          --vm-name footprint \
+          --name CustomScriptExtension \
+          --publisher Microsoft.Compute \
+          --force-update \
+          --settings '{"commandToExecute": "powershell -Command {
+            az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant $tenantId;
+            Get-AksEdgeKubeConfig;
+            az connectedk8s connect -n $clusterName -l ${{ inputs.location }} -g ${{ inputs.resourceGroupName }} --subscription $subscriptionId;
+            az connectedk8s enable-features -n $clusterName -g ${{ inputs.resourceGroupName }} --custom-locations-oid ${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }} --features cluster-connect custom-locations
+            }"}'

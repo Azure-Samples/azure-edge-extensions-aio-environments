@@ -62,24 +62,16 @@ jobs:
         ARCHITECTURE="$(echo ${{ inputs.configuration }} | cut -d'+' -f6)"
         VMSIZE="$(echo ${{ inputs.configuration }} | cut -d'+' -f7)"
         OSTYPE="$(echo ${{ inputs.configuration }} | cut -d'+' -f8)"
+
         echo "configurationName=$CONFIGURATIONNAME" >> $GITHUB_OUTPUT
         echo "vmSize=$VMSIZE" >> "$GITHUB_OUTPUT"
-      
-        echo "ConfigurationName: $CONFIGURATIONNAME"
-        echo "Publisher: $PUBLISHER"
-        echo "Offer: $OFFER"
-        echo "Sku: $SKU"
-        echo "Version: $VERSION"
-        echo "Architecture: $ARCHITECTURE"
-        echo "VmSize: $VMSIZE"
-        echo "OsType: $OSTYPE"
 
         GALLERY="${{ inputs.computeGalleryName }}"
         RG="${{ inputs.resourceGroupName }}"
         GALLERY_EXISTS=false
         IDENTITY_EXISTS=false
 
-        echo "Checking if things exists..."
+        echo "Checking if things exist..."
 
         if [ -n "$(az sig show --gallery-name $GALLERY -g $RG --query id -o tsv 2>/dev/null)" ]; then
           echo "Gallery $GALLERY found in $RG. Use existing..."
@@ -93,26 +85,27 @@ jobs:
 
         echo "Running az deployment sub create..."
 
-        # az deployment sub create \
-        # --name fpdeployment${{github.run_id}} \
-        # --location ${{ inputs.location }} \
-        # --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
-        # --parameters spClientId=${{ secrets.AZURE_CLIENT_ID }} \
-        #               spClientSecret=${{ secrets.AZURE_CLIENT_SECRET }} \
-        #               resourceGroupName=${{ inputs.resourceGroupName }} \
-        #               galleryName=${{ inputs.computeGalleryName }} \
-        #               imageDefinitionName=$CONFIGURATIONNAME \
-        #               imageTemplateName="aksEEAIO-${{github.run_id}}" \
-        #               imageVersion="latest" \
-        #               publisher=$PUBLISHER \
-        #               offer=$OFFER \
-        #               sku=$SKU \
-        #               version=$VERSION\
-        #               architecture=$ARCHITECTURE \
-        #               vmSize=$VMSIZE \
-        #               osType=$OSTYPE \
-        #               exists=$GALLERY_EXISTS \
-        #               identityExists=$IDENTITY_EXISTS --debug
+        az deployment sub create \
+          --name fpdeployment${{github.run_id}} \
+          --location ${{ inputs.location }} \
+          --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
+          --parameters spClientId=${{ secrets.AZURE_CLIENT_ID }} \
+                        spClientSecret=${{ secrets.AZURE_CLIENT_SECRET }} \
+                        customLocationsObjectId=${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }} \
+                        resourceGroupName=${{ inputs.resourceGroupName }} \
+                        galleryName=${{ inputs.computeGalleryName }} \
+                        imageDefinitionName=$CONFIGURATIONNAME \
+                        imageTemplateName="aksEEAIO-${{github.run_id}}" \
+                        imageVersion="latest" \
+                        publisher=$PUBLISHER \
+                        offer=$OFFER \
+                        sku=$SKU \
+                        version=$VERSION\
+                        architecture=$ARCHITECTURE \
+                        vmSize=$VMSIZE \
+                        osType=$OSTYPE \
+                        exists=$GALLERY_EXISTS \
+                        identityExists=$IDENTITY_EXISTS --debug
   Build-VM:
     if: ${{ inputs.createVm }}
     uses: ./.github/workflows/build-vm.yaml

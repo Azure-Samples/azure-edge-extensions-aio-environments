@@ -3,6 +3,7 @@ param identityId string
 param spClientId string
 @secure()
 param spClientSecret string
+param customLocationsObjectId string
 param stagingResourceGroupName string
 //param imageVersionNumber string
 param runOutputName string = 'arc_footprint_image'
@@ -151,6 +152,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         name: 'InstallAzureCLIExtension'
         inline: [
           'az extension add --name azure-iot-ops'
+          'az connectedk8s enable-features -n ${arcClusterName} -g ${resourceGroup().name} --custom-locations-oid ${customLocationsObjectId} --features cluster-connect custom-locations'
         ]
       }
       {
@@ -159,6 +161,14 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         name: 'InstallAIO'
         inline: [
           'az iot ops init --cluster ${arcClusterName} -g ${resourceGroup().name} --kv-id $(az keyvault create -n kv-${imageTemplateName} -g ${resourceGroup().name} -o tsv --query id)'
+        ]
+      }
+      {
+        type: 'PowerShell'
+        runElevated: true
+        name: 'Disconnect Arc'
+        inline: [
+          'az connectedk8s delete -n ${arcClusterName} -g ${resourceGroup().name} --force'
         ]
       }
       // optional inbound firewall rule for MQTT

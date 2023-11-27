@@ -5,6 +5,7 @@ param resourceGroupName string
 param spClientId string
 @secure()
 param spClientSecret string
+param customLocationsObjectId string
 
 param galleryName string
 param imageDefinitionName string
@@ -44,6 +45,7 @@ module imageBuilder 'image-builder.bicep' = {
     identityId: imageIdentityModule.outputs.userAssignedIdentity.id
     spClientId: spClientId
     spClientSecret: spClientSecret
+    customLocationsObjectId: customLocationsObjectId
     stagingResourceGroupName: '${imageTemplateName}-staging'
     galleryName: galleryName
     imageDefinitionName: imageDefinitionName
