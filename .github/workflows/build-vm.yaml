@@ -77,8 +77,6 @@ jobs:
     - name: Create VM
       run: |
         subscriptionId=$(az account show --query id -o tsv)
-        tenantId=$(az account show --query tenantId -o tsv)
-        clusterName=aksEEAIO-${{github.run_id}}
 
         vmResourceGroup=${{ inputs.resourceGroupName }}
         galleryName=${{ inputs.computeGalleryName }}
@@ -89,8 +87,8 @@ jobs:
         adminUsername=${{ secrets.VMADMINUSERNAME }}
         adminPassword=${{ secrets.VMADMINPASSWORD }}
 
-        imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/imageDefinitionName"
-
+        imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/$imageDefinitionName"
+      
         az vm create \
           --resource-group $vmResourceGroup \
           --name $vmName \
@@ -102,7 +100,13 @@ jobs:
           --admin-username $adminUsername \
           --admin-password $adminPassword \
           --generate-ssh-keys
-        
+
+    - name: Install VM AIO
+      run: |
+        subscriptionId=$(az account show --query id -o tsv)
+        tenantId=$(az account show --query tenantId -o tsv)
+        clusterName=aksEEAIO-${{github.run_id}}
+
         az vm extension set \
           --resource-group rg-vm-vhdx-arc-footprint \
           --vm-name footprint \
