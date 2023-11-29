@@ -125,7 +125,7 @@ jobs:
             az provider register -n "Microsoft.DeviceRegistry"; \
             az extension add --name connectedk8s; \
             az extension add --name azure-iot-ops; \
-            az connectedk8s connect -n $clusterName -l ${{ inputs.location }} -g ${{ inputs.resourceGroupName }} --subscription $subscriptionId; \
-            az connectedk8s enable-features -n $clusterName -g ${{ inputs.resourceGroupName }} --custom-locations-oid ${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }} --features cluster-connect custom-locations \
-            az iot ops init --cluster aksEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} --kv-id $(az keyvault create -n kvEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} -o tsv --query id) --sp-app-id ${{ secrets.AZURE_SP_CLIENT_ID }} --sp-object-id ${{ secrets.AZURE_SP_OBJECT_ID }} --sp-secret ${{ secrets.AZURE_SP_CLIENT_ID }}; \
+            az connectedk8s connect -n arc-aksEEAIO-${{github.run_id}} -l ${{ inputs.location }} -g ${{ inputs.resourceGroupName }} --subscription $subscriptionId; \
+            az connectedk8s enable-features -n arc-aksEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} --custom-locations-oid ${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }} --features cluster-connect custom-locations \
+            az iot ops init --cluster arc-aksEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} --kv-id $(az keyvault create -n kvEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} -o tsv --query id) --sp-app-id ${{ secrets.AZURE_SP_CLIENT_ID }} --sp-object-id ${{ secrets.AZURE_SP_OBJECT_ID }} --sp-secret ${{ secrets.AZURE_SP_CLIENT_ID }}; \
             \}"}'
