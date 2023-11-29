@@ -3,6 +3,7 @@ targetScope = 'subscription'
 param location string = deployment().location
 param resourceGroupName string
 param spClientId string
+param spObjectId string
 @secure()
 param spClientSecret string
 param customLocationsObjectId string
@@ -44,6 +45,7 @@ module imageBuilder 'image-builder.bicep' = {
     location: location
     identityId: imageIdentityModule.outputs.userAssignedIdentity.id
     spClientId: spClientId
+    spObjectId: spObjectId
     spClientSecret: spClientSecret
     customLocationsObjectId: customLocationsObjectId
     stagingResourceGroupName: '${imageTemplateName}-staging'

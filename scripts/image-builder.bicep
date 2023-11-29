@@ -1,6 +1,7 @@
 param location string = resourceGroup().location
 param identityId string
 param spClientId string
+param spObjectId string
 @secure()
 param spClientSecret string
 param customLocationsObjectId string
@@ -22,7 +23,7 @@ param architecture string
 param vmSize string
 param osType string
 param exists bool
-var arcClusterName = 'aks-${imageTemplateName}'
+var arcClusterName = imageTemplateName
 
 output azureImageTemplateName string = azureImageBuilderTemplate.name
 
@@ -152,7 +153,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         name: 'InstallAzureCLIExtension'
         inline: [
           'az extension add --name azure-iot-ops'
-          // 'az connectedk8s enable-features -n ${arcClusterName} -g ${resourceGroup().name} --custom-locations-oid ${customLocationsObjectId} --features cluster-connect custom-locations'
+          'az connectedk8s enable-features -n ${arcClusterName} -g ${resourceGroup().name} --custom-locations-oid ${customLocationsObjectId} --features cluster-connect custom-locations'
         ]
       }
       // {
@@ -160,7 +161,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       //   runElevated: true
       //   name: 'InstallAIO'
       //   inline: [
-      //     'az iot ops init --cluster ${arcClusterName} -g ${resourceGroup().name} --kv-id $(az keyvault create -n kv-${imageTemplateName} -g ${resourceGroup().name} -o tsv --query id)'
+      //     'az iot ops init --cluster ${arcClusterName} -g ${resourceGroup().name} --kv-id $(az keyvault create -n kv-${imageTemplateName} -g ${resourceGroup().name} -o tsv --query id) --sp-app-id ${spClientId} --sp-object-id ${spObjectId} --sp-secret ${spClientSecret}'
       //   ]
       // }
       // {
@@ -168,7 +169,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       //   runElevated: true
       //   name: 'Disconnect Arc'
       //   inline: [
-      //     'az connectedk8s delete -n ${arcClusterName} -g ${resourceGroup().name} --force'
+      //     'az connectedk8s delete -n ${arcClusterName} -g ${resourceGroup().name} --force --yes'
       //   ]
       // }
       // optional inbound firewall rule for MQTT

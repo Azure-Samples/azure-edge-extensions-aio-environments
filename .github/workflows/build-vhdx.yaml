@@ -89,8 +89,9 @@ jobs:
           --name fpdeployment${{github.run_id}} \
           --location ${{ inputs.location }} \
           --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
-          --parameters spClientId=${{ secrets.AZURE_CLIENT_ID }} \
-                        spClientSecret=${{ secrets.AZURE_CLIENT_SECRET }} \
+          --parameters spClientId=${{ secrets.AZURE_SP_CLIENT_ID }} \
+                        spObjectId=${{ secrets.AZURE_SP_OBJECT_ID }} \
+                        spClientSecret=${{ secrets.AZURE_SP_CLIENT_SECRET }} \
                         customLocationsObjectId=${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }} \
                         resourceGroupName=${{ inputs.resourceGroupName }} \
                         galleryName=${{ inputs.computeGalleryName }} \
