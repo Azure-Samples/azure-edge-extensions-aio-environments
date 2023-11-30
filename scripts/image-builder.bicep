@@ -128,7 +128,7 @@ resource runImageTemplate 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
   }
   properties: {
     azPowerShellVersion: '9.7'
-    scriptContent: 'Invoke-AzResourceAction -ResourceName ${((osType == 'Windows') ? imageTemplateWindows.name : imageTemplateLinux.name )} -ResourceGroupName ${resourceGroup().name} -ResourceType Microsoft.VirtualMachineImages/imageTemplates -Action Run -Force'
+    scriptContent: 'Invoke-AzResourceAction -ResourceName ${imageTemplateName} -ResourceGroupName ${resourceGroup().name} -ResourceType Microsoft.VirtualMachineImages/imageTemplates -Action Run -Force'
     retentionInterval: 'P1D'
   }
 }
