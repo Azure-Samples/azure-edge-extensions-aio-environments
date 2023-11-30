@@ -19,7 +19,7 @@ on:
         type: choice
         options:
           - WinServer+MicrosoftWindowsServer+WindowsServer+2022-datacenter-g2+latest+x64+Standard_D8s_v5+Windows
-          - WinIoT+MicrosoftWindowsDesktop+Windows-10+win10-22h2-entn-g2+latest+x64+Standard_D8s_v5+Windows
+          - WinIoT+MicrosoftWindowsDesktop+windows-11+win11-23h2-ent+latest+x64+Standard_D8s_v5+Windows
           - Linux+canonical+0001-com-ubuntu-server-jammy+22_04-lts-gen2+latest+x64+Standard_D8s_v5+Linux
       computeGalleryName:
         description: 'Azure Compute Gallery Name'
