@@ -87,10 +87,6 @@ module imageTemplateWindows 'image-template-windows.bicep' = if(osType == 'Windo
   params: {
     location: location
     identityId: identityId
-    spClientId: spClientId
-    spObjectId: spObjectId
-    spClientSecret: spClientSecret
-    customLocationsObjectId: customLocationsObjectId
     stagingResourceGroupName: stagingResourceGroupName
     runOutputName: runOutputName
     imageTemplateName: imageTemplateName
@@ -108,10 +104,6 @@ module imageTemplateLinux 'image-template-linux.bicep' = if(osType == 'Linux') {
   params: {
     location: location
     identityId: identityId
-    spClientId: spClientId
-    spObjectId: spObjectId
-    spClientSecret: spClientSecret
-    customLocationsObjectId: customLocationsObjectId
     stagingResourceGroupName: stagingResourceGroupName
     runOutputName: runOutputName
     imageTemplateName: imageTemplateName

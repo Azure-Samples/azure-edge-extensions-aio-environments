@@ -1,10 +1,5 @@
 param location string = resourceGroup().location
 param identityId string
-param spClientId string
-param spObjectId string
-@secure()
-param spClientSecret string
-param customLocationsObjectId string
 param stagingResourceGroupName string
 //param imageVersionNumber string
 param runOutputName string = 'arc_footprint_image'
@@ -17,7 +12,6 @@ param offer string
 param sku string
 param version string
 param vmSize string
-var arcClusterName = 'aks-${imageTemplateName}'
 
 
 resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
@@ -36,8 +30,8 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'File'
         name: 'DownloadAIOScript'
-        sourceUri: 'https://raw.githubusercontent.com/Azure/AKS-Edge/main/tools/scripts/AksEdgeQuickStart/AksEdgeQuickStartForAio.ps1'
-        destination: 'c:\\scripts\\AksEdgeQuickStartForAio.ps1'
+        sourceUri: 'https://raw.githubusercontent.com/Azure/AKS-Edge/main/tools/scripts/AksEdgeQuickStart/AksEdgeQuickStart.ps1'
+        destination: 'c:\\scripts\\AksEdgeQuickStart.ps1'
       }
       {
         type: 'PowerShell'
@@ -52,9 +46,6 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         runElevated: true
         name: 'AzSetup'
         inline: [
-          'az login --service-principal -u ${spClientId} -p ${spClientSecret} --tenant ${subscription().tenantId}'
-          'az account show'
-          'az extension add --name connectedk8s'
           'Invoke-WebRequest -Uri https://secure.globalsign.net/cacert/Root-R1.crt -OutFile c:\\globalsignR1.crt'
           'Import-Certificate -FilePath c:\\globalsignR1.crt -CertStoreLocation Cert:\\LocalMachine\\Root'
         ]
@@ -63,14 +54,14 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         type: 'WindowsRestart'
         name: 'StartAKSEdgeInstall-EnableHyperV'
         restartTimeout: '15m'
-        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName ${arcClusterName}'
+        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStart.ps1'
       }
       {
         type: 'PowerShell'
         name: 'ResumeInstall'
         runElevated: true
         inline: [
-          '$ConfirmPreference = \'None\'; c:\\scripts\\AksEdgeQuickStartForAio.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId} -Location ${location} -ResourceGroupName ${resourceGroup().name} -ClusterName ${arcClusterName}'
+          '$ConfirmPreference = \'None\'; c:\\scripts\\AksEdgeQuickStart.ps1'
         ]
       }
       {
@@ -80,15 +71,6 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         inline: [
           'kubectl get pods -A'
           'Kubectl get nodes'
-        ]
-      }
-      {
-        type: 'PowerShell'
-        runElevated: true
-        name: 'InstallAzureCLIExtension'
-        inline: [
-          'az extension add --name azure-iot-ops'
-          'az connectedk8s enable-features -n ${arcClusterName} -g ${resourceGroup().name} --custom-locations-oid ${customLocationsObjectId} --features cluster-connect custom-locations'
         ]
       }
       // {

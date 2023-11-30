@@ -1,10 +1,5 @@
 param location string = resourceGroup().location
 param identityId string
-param spClientId string
-param spObjectId string
-@secure()
-param spClientSecret string
-param customLocationsObjectId string
 param stagingResourceGroupName string
 //param imageVersionNumber string
 param runOutputName string = 'arc_footprint_image'
@@ -17,7 +12,6 @@ param offer string
 param sku string
 param version string
 param vmSize string
-var arcClusterName = 'aks-${imageTemplateName}'
 
 resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
   name: imageTemplateName
