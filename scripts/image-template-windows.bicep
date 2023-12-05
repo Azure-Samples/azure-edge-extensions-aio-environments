@@ -51,10 +51,19 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         ]
       }
       {
+        type: 'PowerShell'
+        runElevated: true
+        name: 'Prep script and PowerShell'
+        inline: [
+          'Unblock-File c:\\scripts\\AksEdgeQuickStart.ps1'
+          'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope LocalMachine -Force'
+        ]
+      }
+      {
         type: 'WindowsRestart'
         name: 'StartAKSEdgeInstall-EnableHyperV'
         restartTimeout: '15m'
-        restartCommand: 'powershell.exe -File c:\\scripts\\AksEdgeQuickStart.ps1'
+        restartCommand: 'powershell.exe -ExecutionPolicy Bypass -File c:\\scripts\\AksEdgeQuickStart.ps1'
       }
       {
         type: 'PowerShell'
