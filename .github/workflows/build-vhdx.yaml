@@ -29,7 +29,7 @@ on:
       resourceGroupName:
         description: 'Azure Resource Group'
         type: string
-        default: rg-arc-footprint
+        default: rg-arc-footprint-images
         required: true
       createVm:
         description: 'Create VM from image'
@@ -42,6 +42,7 @@ jobs:
     outputs:
       configurationName: ${{ steps.createImage.outputs.configurationName }}
       vmSize: ${{ steps.createImage.outputs.vmSize }}
+      imageVersion: ${{ steps.createImage.outputs.imageVersion }}
     steps:
     - uses: actions/checkout@v2
       with:
@@ -73,7 +74,8 @@ jobs:
 
         echo "Checking if things exist..."
 
-        if [ -n "$(az sig show --gallery-name $GALLERY -g $RG --query id -o tsv 2>/dev/null)" ]; then
+        if [ -n "$(az sig list --query "[?name=='$GALLERY']" -o tsv 2>/dev/null)" ]; then
+          RG=$(az sig list --query "[?name=='$GALLERY'].resourceGroup" -o tsv)
           echo "Gallery $GALLERY found in $RG. Use existing..."
           GALLERY_EXISTS=true
         fi
@@ -85,15 +87,11 @@ jobs:
 
         echo "Running az deployment sub create..."
 
-        az deployment sub create \
+        azureImageTemplateid=$(az deployment sub create \
           --name fpdeployment${{github.run_id}} \
           --location ${{ inputs.location }} \
           --template-file $GITHUB_WORKSPACE/scripts/main-image.bicep \
-          --parameters spClientId=${{ secrets.AZURE_SP_CLIENT_ID }} \
-                        spObjectId=${{ secrets.AZURE_SP_OBJECT_ID }} \
-                        spClientSecret=${{ secrets.AZURE_SP_CLIENT_SECRET }} \
-                        customLocationsObjectId=${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }} \
-                        resourceGroupName=${{ inputs.resourceGroupName }} \
+          --parameters resourceGroupName=${{ inputs.resourceGroupName }} \
                         galleryName=${{ inputs.computeGalleryName }} \
                         imageDefinitionName=$CONFIGURATIONNAME \
                         imageTemplateName="aksEEAIO-${{github.run_id}}" \
@@ -106,16 +104,31 @@ jobs:
                         vmSize=$VMSIZE \
                         osType=$OSTYPE \
                         exists=$GALLERY_EXISTS \
-                        identityExists=$IDENTITY_EXISTS --debug
+                        identityExists=$IDENTITY_EXISTS --query properties.outputs.azureImageTemplateid.value -o tsv)
+
+        az resource wait --ids $azureImageTemplateid --api-version=2022-02-14 --custom "properties.lastRunStatus.runState=='Failed'||properties.lastRunStatus.runState=='Succeeded'"
+        templateStatus=$(az resource show --ids $azureImageTemplateid --api-version=2022-02-14 --query "properties.lastRunStatus.runState" -o tsv)
+        
+        if [ "$templateStatus" != "Succeeded" ]; then
+          echo "Image creation has not succeeded. Last run state: $templateStatus"
+          exit 1
+        else
+          echo "Image creation has succeeded."
+        fi
+        
+        newImageVersion=$(az resource show --ids $azureImageTemplateid/runOutputs/arc_footprint_image --api-version=2021-10-01 --query properties.artifactId -o tsv | rev | cut -d '/' -f 1 | rev)
+        echo "imageVersion=$newImageVersion" >> "$GITHUB_OUTPUT"
   Build-VM:
     if: ${{ inputs.createVm }}
     uses: ./.github/workflows/build-vm.yaml
     needs: Build-VHDX
     with:
       location: ${{ inputs.location }}
-      resourceGroupName: ${{ inputs.resourceGroupName }}
+      galleryResourceGroupName: ${{ inputs.resourceGroupName }}
       computeGalleryName: ${{ inputs.computeGalleryName }}
       imageDefinitionName: ${{ needs.Build-VHDX.outputs.configurationName }}
+      imageVersion: ${{ needs.Build-VHDX.outputs.imageVersion }}
+      resourceGroupName: rg-arc-footprint
       vmName: ${{ needs.Build-VHDX.outputs.configurationName }}
       vmSize: ${{ needs.Build-VHDX.outputs.vmSize }}
     secrets: inherit

@@ -13,6 +13,7 @@ param sku string
 param version string
 param vmSize string
 
+output id string = azureImageBuilderTemplate.id
 
 resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
   name: imageTemplateName
@@ -82,32 +83,6 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
           'Kubectl get nodes'
         ]
       }
-      // {
-      //   type: 'PowerShell'
-      //   runElevated: true
-      //   name: 'InstallAIO'
-      //   inline: [
-      //     'az iot ops init --cluster ${arcClusterName} -g ${resourceGroup().name} --kv-id $(az keyvault create -n kv-${imageTemplateName} -g ${resourceGroup().name} -o tsv --query id) --sp-app-id ${spClientId} --sp-object-id ${spObjectId} --sp-secret ${spClientSecret}'
-      //   ]
-      // }
-      // {
-      //   type: 'PowerShell'
-      //   runElevated: true
-      //   name: 'Disconnect Arc'
-      //   inline: [
-      //     'az connectedk8s delete -n ${arcClusterName} -g ${resourceGroup().name} --force --yes'
-      //   ]
-      // }
-      // optional inbound firewall rule for MQTT
-      // {
-      //   type: 'PowerShell'
-      //   runElevated: true
-      //   name: 'InstallAIO'
-      //   inline: [
-      //     'New-NetFirewallRule -DisplayName "Azure IoT MQ" -Direction Inbound -Protocol TCP -LocalPort 8883 -Action Allow'
-      //     '$IpAddress = kubectl get svc aio-mq-dmqtt-frontend -n azure-iot-operations -o jsonpath=\'{.status.loadBalancer.ingress[0].ip}\'; netsh interface portproxy add v4tov4 listenport=8883 listenaddress=0.0.0.0 connectport=8883 connectaddress=$IpAddress'
-      //   ]
-      // }
     ]
     distribute: [
       {

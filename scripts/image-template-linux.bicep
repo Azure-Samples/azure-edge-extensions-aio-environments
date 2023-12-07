@@ -13,6 +13,8 @@ param sku string
 param version string
 param vmSize string
 
+output id string = azureImageBuilderTemplate.id
+
 resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
   name: imageTemplateName
   location: location

@@ -5,13 +5,19 @@ on:
       location:
         required: true
         type: string
-      resourceGroupName:
+      galleryResourceGroupName:
         required: true
         type: string
       computeGalleryName:
         required: true
         type: string
       imageDefinitionName:
+          required: true
+          type: string
+      imageVersion:
+          required: true
+          type: string
+      resourceGroupName:
           required: true
           type: string
       vmName:
@@ -32,9 +38,9 @@ on:
         - eastus2
         - westus
         - westeurope
-      resourceGroupName:
-        description: 'Azure Resource Group Name'
-        default: 'rg-arc-footprint'
+      galleryResourceGroupName:
+        description: 'Azure Gallery Resource Group Name'
+        default: 'rg-arc-footprint-images'
         required: true
         type: string
       computeGalleryName:
@@ -44,7 +50,21 @@ on:
         type: string
       imageDefinitionName:
         description: 'Image Definition Name'
-        default: 'id-arc-footprint'
+        default: 'WinServer'
+        required: true
+        type: choice
+        options:
+        - WinServer
+        - WinIoT
+        - Linux
+      imageVersion:
+        description: 'Image Version'
+        default: '1.0.0'
+        required: true
+        type: string
+      resourceGroupName:
+        description: 'Azure VM Resource Group Name'
+        default: 'rg-arc-footprint'
         required: true
         type: string
       vmName:
@@ -60,6 +80,21 @@ on:
 jobs:
   Build-VM:
     runs-on: ubuntu-latest
+    env:
+      galleryResourceGroup: ${{ inputs.galleryResourceGroupName }}
+      galleryName: ${{ inputs.computeGalleryName }}
+      imageDefinitionName: ${{ inputs.imageDefinitionName }}
+      imageVersion: ${{ inputs.imageVersion }}
+      location: ${{ inputs.location }}
+      resourceGroup: ${{ inputs.resourceGroupName }}
+      vmName: ${{ inputs.vmName }}
+      vmSize: ${{ inputs.vmSize }}
+      adminUsername: ${{ secrets.VMADMINUSERNAME }}
+      adminPassword: ${{ secrets.VMADMINPASSWORD }}
+      clusterName: "aksEEAIO-${{github.run_id}}"
+      vmIdentityName: ${{ inputs.vmName }}-id
+      grafanaDashboardName: footprint-${{github.run_id}}
+      monitorName: footprint
     steps:
     - uses: actions/checkout@v4
       with:
@@ -68,29 +103,50 @@ jobs:
       uses: azure/login@v1
       with:
         creds: '${{ secrets.AZURE_CREDENTIALS }}'
+    - name: Validate parameters
+      run: |
+        echo "Checking if VM already exists..."
+        vm=$(az vm list --query "[?name=='$vmName'&&resourceGroup=='$resourceGroup'].id" -o tsv)
+        if [ -n "$vm" ]; then
+          echo "Error: VM $vmName already exists. Please delete existing VM or re-run with different name."
+          exit 1
+        fi
     - name: Wait for Image to be created
       run: |
         echo "Wait for image to be created..."
-        az sig image-version wait --created --resource-group ${{ inputs.resourceGroupName }} \
-        --gallery-name ${{ inputs.computeGalleryName }} --gallery-image-definition ${{ inputs.imageDefinitionName }} \
-        --gallery-image-version 1.0.0
+        az sig image-version wait --created --resource-group $galleryResourceGroup \
+        --gallery-name $galleryName --gallery-image-definition $imageDefinitionName \
+        --gallery-image-version $imageVersion
     - name: Create VM
       run: |
         subscriptionId=$(az account show --query id -o tsv)
 
-        vmResourceGroup=${{ inputs.resourceGroupName }}
-        galleryName=${{ inputs.computeGalleryName }}
-        imageDefinitionName=${{ inputs.imageDefinitionName }}
-        location=${{ inputs.location }}
-        vmName=${{ inputs.vmName }}
-        vmSize=${{ inputs.vmSize }}
-        adminUsername=${{ secrets.VMADMINUSERNAME }}
-        adminPassword=${{ secrets.VMADMINPASSWORD }}
+        if [ !$(az group exists -n $resourceGroup) ]; then
+          echo "Creating RG $resourceGroup..."
+          az group create -n $resourceGroup -l $location
+        fi
 
-        imgDef="/subscriptions/$subscriptionId/resourceGroups/$vmResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/$imageDefinitionName"
-      
+        imgDef="/subscriptions/$subscriptionId/resourceGroups/$galleryResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/$imageDefinitionName/versions/$imageVersion"
+
+        echo "Checking identity exists?..."
+        identity=$(az identity list --query "[?name=='$vmIdentityName'&&resourceGroup=='$resourceGroup'].id" -o tsv)
+
+        if [ -z $identity ]; then
+          echo "Creating identity $vmIdentityName..."
+          identity="$(az identity create --name $vmIdentityName -g $resourceGroup --query id -o tsv)"
+        else
+          echo "Identity ($vmIdentityName) already exists"
+        fi
+
+        echo "Fetching principalId..."
+        principalId="$(az identity show --name $vmIdentityName -g $resourceGroup --query principalId -o tsv)"
+
+        echo "Creating role assignment for $vmIdentityName (principalId: $principalId)..."
+        az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role "Contributor" --scope /subscriptions/$subscriptionId
+
+        echo "Creating VM..."
         az vm create \
-          --resource-group $vmResourceGroup \
+          --resource-group $resourceGroup \
           --name $vmName \
           --image $imgDef \
           --size $vmSize \
@@ -99,7 +155,7 @@ jobs:
           --enable-vtpm true \
           --admin-username $adminUsername \
           --admin-password $adminPassword \
-          --generate-ssh-keys
+          --assign-identity $identity
     
     - name: Install provider extensions
       run: |
@@ -110,16 +166,19 @@ jobs:
         az provider register -n "Microsoft.IoTOperationsMQ";
         az provider register -n "Microsoft.IoTOperationsDataProcessor";
         az provider register -n "Microsoft.DeviceRegistry";
+        az provider register -n "Microsoft.Insights";
+        az provider register -n "Microsoft.AlertsManagement";
 
     - name: Install AIO
       run: |
         subscriptionId=$(az account show --query id -o tsv)
         tenantId=$(az account show --query tenantId -o tsv)
-        osType=$(az vm show -g ${{ inputs.resourceGroupName }} -n ${{ inputs.vmName }} --query storageProfile.osDisk.osType -o tsv)
+        osType=$(az vm show -g $resourceGroup -n $vmName --query storageProfile.osDisk.osType -o tsv)
         if [ $osType == "Windows" ]; then
+          echo "Creating VM extension with force update..."
           az vm extension set \
-            --resource-group ${{ inputs.resourceGroupName }} \
-            --vm-name ${{ inputs.vmName }} \
+            --resource-group $resourceGroup \
+            --vm-name $vmName \
             --name CustomScriptExtension \
             --publisher Microsoft.Compute \
             --force-update \
@@ -127,30 +186,64 @@ jobs:
                 kubectl get pods -A -v6; \\
                 New-Item -Path c:\\ -Name Scripts -ItemType directory -Force; \\
                 Copy-Item C:\\Windows\\System32\\config\\systemprofile\\.kube\\config -Destination C:\\Scripts; \\
-                az login --service-principal -u \"\"${{ secrets.AZURE_CLIENT_ID }}\"\" -p \"\"${{ secrets.AZURE_CLIENT_SECRET }}\"\" --tenant \"\"$tenantId\"\"; \\
+                az login --identity; \\
                 az extension add --name connectedk8s; \\
                 az extension add --name azure-iot-ops; \\
-                az connectedk8s connect -n arc-aksEEAIO-${{github.run_id}} -l ${{ inputs.location }} -g ${{ inputs.resourceGroupName }} --kube-config C:\\Scripts\\config --subscription $subscriptionId; \\
-                az connectedk8s enable-features -n arc-aksEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \\
-                az iot ops init --context default --cluster arc-aksEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} --kv-id \"\"$(az keyvault create -n kv-aksEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} -o tsv --query id)\"\" --sp-app-id \"\"${{ secrets.AZURE_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_OBJECT_ID }}\"\" --sp-secret \"\"${{ secrets.AZURE_CLIENT_SECRET }}\"\"; \\
+                az connectedk8s connect -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \\
             \"}"
-              
-        else
-          az vm extension set \
-          --resource-group ${{ inputs.resourceGroupName }} \
-          --vm-name ${{ inputs.vmName }} \
-          --name customScript \
-          --publisher Microsoft.Azure.Extensions \
-          --force-update \
-          --settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -Confirm:\$false; \\
-              kubectl get pods -A -v6; \\
-              New-Item -Path c:\\ -Name Scripts -ItemType directory -Force; \\
-              Copy-Item C:\\Windows\\System32\\config\\systemprofile\\.kube\\config -Destination C:\\Scripts; \\
-              az login --service-principal -u \"\"${{ secrets.AZURE_CLIENT_ID }}\"\" -p \"\"${{ secrets.AZURE_CLIENT_SECRET }}\"\" --tenant \"\"$tenantId\"\"; \\
-              az extension add --name connectedk8s; \\
-              az extension add --name azure-iot-ops; \\
-              az connectedk8s connect -n arc-aksEEAIO-${{github.run_id}} -l ${{ inputs.location }} -g ${{ inputs.resourceGroupName }} --kube-config C:\\Scripts\\config --subscription $subscriptionId; \\
-              az connectedk8s enable-features -n arc-aksEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \\
-              az iot ops init --context default --cluster arc-aksEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} --kv-id \"\"$(az keyvault create -n kv-aksEEAIO-${{github.run_id}} -g ${{ inputs.resourceGroupName }} -o tsv --query id)\"\" --sp-app-id \"\"${{ secrets.AZURE_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_OBJECT_ID }}\"\" --sp-secret \"\"${{ secrets.AZURE_CLIENT_SECRET }}\"\"; \\
-          \"}"
         fi
+    - name: Create monitoring resources
+      run: |
+        echo "Making sure necessary providers are registered..."
+        az provider register --namespace Microsoft.Insights --wait
+        az provider register --namespace Microsoft.AlertsManagement --wait
+        az extension add --name amg
+
+        workspaceId=$(az resource list --resource-type Microsoft.monitor/accounts --query "[?name=='$monitorName'&&resourceGroup=='$resourceGroup'].id" -o tsv)
+
+        if [ -z $workspaceId ]; then
+          echo "Creating new Azure Monitor workspace."
+          workspaceId="$(az resource create -g $resourceGroup --namespace microsoft.monitor --resource-type accounts --name $monitorName --properties "{}" --query id -o tsv)"
+        else
+          echo "Azure Monitor workspace already exists."
+        fi
+
+        grafanaIdentity=$(az grafana list --query "[?name=='$grafanaDashboardName'&&resourceGroup=='$resourceGroup'].identity.principalId" -o tsv)
+        if [ -z $(az grafana list --query "[?name=='$grafanaDashboardName'&&resourceGroup=='$resourceGroup'].name" -o tsv) ]; then
+          echo "Create Grafana resource in azure."
+          grafanaIdentity=$(az grafana create -n $grafanaDashboardName -g $resourceGroup --query "identity.principalId" -o tsv)
+        else
+          echo "Grafana resource ($grafanaDashboardName) already exists."
+        fi
+
+        subscriptionId=$(az account show --query id -o tsv)
+        az role assignment create --assignee $grafanaIdentity --role "Monitoring Data Reader" --scope /subscriptions/$subscriptionId
+
+        echo "Creating k8s-extension azuremonitor-metrics..."
+        az k8s-extension create --name azuremonitor-metrics \
+          --cluster-name $clusterName \
+          --resource-group $resourceGroup \
+          --cluster-type connectedClusters \
+          --extension-type Microsoft.AzureMonitor.Containers.Metrics \
+          --configuration-settings azure-monitor-workspace-resource-id=$workspaceid
+        
+        echo "Adding prometheus data source to Grafana..."
+        promUrl="$(az resource show --resource-type Microsoft.monitor/accounts --name $monitorName -g $resourceGroup --query properties.metrics.prometheusQueryEndpoint -o tsv)"
+        az grafana data-source create -n $grafanaDashboardName -g $resourceGroup --definition '{
+          "name": "Azure Managed Prometheus-1",
+          "type": "prometheus",
+          "access": "proxy",
+          "url": "'"$promUrl"'",
+          "jsonData": {
+            "httpMethod": "POST",
+            "azureCredentials": { "authType": "msi" }
+          }
+        }'
+        az grafana folder create -n $grafanaDashboardName -g $resourceGroup --title "Footprint Dashboards"
+        az grafana dashboard create \
+          -n $grafanaDashboardName \
+          -g $resourceGroup \
+          --title "Memory Footprint / Namespace (Workloads)" \
+          --folder "Footprint Dashboards" \
+          --definition $GITHUB_WORKSPACE/grafana/mem_by_ns.json
+          

@@ -1,12 +1,6 @@
 param location string = resourceGroup().location
 param identityId string
-param spClientId string
-param spObjectId string
-@secure()
-param spClientSecret string
-param customLocationsObjectId string
 param stagingResourceGroupName string
-//param imageVersionNumber string
 param runOutputName string = 'arc_footprint_image'
 param galleryName string
 param imageDefinitionName string
@@ -23,6 +17,8 @@ param architecture string
 param vmSize string
 param osType string
 param exists bool
+
+output azureImageTemplateid string = osType == 'Windows' ? imageTemplateWindows.outputs.id : imageTemplateLinux.outputs.id
 
 resource gallery 'Microsoft.Compute/galleries@2021-10-01' = if(!exists) {
   name: galleryName

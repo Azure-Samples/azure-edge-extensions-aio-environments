@@ -2,11 +2,6 @@ targetScope = 'subscription'
 
 param location string = deployment().location
 param resourceGroupName string
-param spClientId string
-param spObjectId string
-@secure()
-param spClientSecret string
-param customLocationsObjectId string
 
 param galleryName string
 param imageDefinitionName string
@@ -22,6 +17,8 @@ param vmSize string = 'Standard_D2s_v3'
 param osType string = 'Windows'
 param exists bool = false
 param identityExists bool = false
+
+output azureImageTemplateid string = imageBuilder.outputs.azureImageTemplateid
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName
@@ -44,10 +41,6 @@ module imageBuilder 'image-builder.bicep' = {
   params: {
     location: location
     identityId: imageIdentityModule.outputs.userAssignedIdentity.id
-    spClientId: spClientId
-    spObjectId: spObjectId
-    spClientSecret: spClientSecret
-    customLocationsObjectId: customLocationsObjectId
     stagingResourceGroupName: '${imageTemplateName}-staging'
     galleryName: galleryName
     imageDefinitionName: imageDefinitionName
