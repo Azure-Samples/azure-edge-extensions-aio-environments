@@ -194,6 +194,7 @@ jobs:
                 kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
                 az login --identity; \
                 az extension add --name connectedk8s; \
+                az extension add --name azure-iot-ops; \
                 az connectedk8s connect -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
                 az connectedk8s enable-features -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
                 \$env:KUBECONFIG='C:\\Scripts\\config'; \
