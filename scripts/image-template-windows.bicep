@@ -79,8 +79,9 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         runElevated: true
         name: 'ValidateInstall'
         inline: [
-          'kubectl get pods -A'
-          'Kubectl get nodes'
+          'Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false;'
+          'kubectl get pods -A --kubeconfig C:\\Scripts\\config'
+          'Kubectl get nodes --kubeconfig C:\\Scripts\\config'
         ]
       }
     ]

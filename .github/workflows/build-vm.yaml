@@ -92,6 +92,7 @@ jobs:
       adminUsername: ${{ secrets.VMADMINUSERNAME }}
       adminPassword: ${{ secrets.VMADMINPASSWORD }}
       clusterName: "aksEEAIO-${{github.run_id}}"
+      kvName: "kv-${{github.run_id}}"
       vmIdentityName: ${{ inputs.vmName }}-id
       grafanaDashboardName: footprint-${{github.run_id}}
       monitorName: footprint
@@ -174,6 +175,13 @@ jobs:
         subscriptionId=$(az account show --query id -o tsv)
         tenantId=$(az account show --query tenantId -o tsv)
         osType=$(az vm show -g $resourceGroup -n $vmName --query storageProfile.osDisk.osType -o tsv)
+        principalId=$(az identity show --name $vmIdentityName -g $resourceGroup --query principalId -o tsv)
+
+        echo "Creating keyvault..."
+        kvId=$(az keyvault create -n $kvName -g $resourceGroup -o tsv --no-self-perms --query id)
+        az keyvault set-policy -n $kvName -g $resourceGroup --object-id ${{ secrets.AZURE_SP_OBJECT_ID }} --secret-permissions all
+        az keyvault set-policy -n $kvName -g $resourceGroup --object-id $principalId --secret-permissions all
+
         if [ $osType == "Windows" ]; then
           echo "Creating VM extension with force update..."
           az vm extension set \
@@ -187,6 +195,9 @@ jobs:
                 az login --identity; \\
                 az extension add --name connectedk8s; \\
                 az connectedk8s connect -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \\
+                az connectedk8s enable-features -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
+                \$env:KUBECONFIG='C:\\Scripts\\config'; \
+                az iot ops init --cluster $clusterName -g $resourceGroupName --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\"; \
             \"}"
         fi
     - name: Create monitoring resources
