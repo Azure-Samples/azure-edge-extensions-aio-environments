@@ -182,13 +182,10 @@ jobs:
             --name CustomScriptExtension \
             --publisher Microsoft.Compute \
             --force-update \
-            --settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -Confirm:\$false; \\
-                kubectl get pods -A -v6; \\
-                New-Item -Path c:\\ -Name Scripts -ItemType directory -Force; \\
-                Copy-Item C:\\Windows\\System32\\config\\systemprofile\\.kube\\config -Destination C:\\Scripts; \\
+            --settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \\
+                kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \\
                 az login --identity; \\
                 az extension add --name connectedk8s; \\
-                az extension add --name azure-iot-ops; \\
                 az connectedk8s connect -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \\
             \"}"
         fi
@@ -225,7 +222,7 @@ jobs:
           --resource-group $resourceGroup \
           --cluster-type connectedClusters \
           --extension-type Microsoft.AzureMonitor.Containers.Metrics \
-          --configuration-settings azure-monitor-workspace-resource-id=$workspaceid
+          --configuration-settings azure-monitor-workspace-resource-id=$workspaceId
         
         echo "Adding prometheus data source to Grafana..."
         promUrl="$(az resource show --resource-type Microsoft.monitor/accounts --name $monitorName -g $resourceGroup --query properties.metrics.prometheusQueryEndpoint -o tsv)"

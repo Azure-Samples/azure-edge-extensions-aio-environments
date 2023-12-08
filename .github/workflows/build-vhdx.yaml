@@ -54,7 +54,6 @@ jobs:
     - name: Run az deployment for image creation
       id: createImage
       run: |
-        #! /bin/bash
         CONFIGURATIONNAME="$(echo ${{ inputs.configuration }} | cut -d'+' -f1)"
         PUBLISHER="$(echo ${{ inputs.configuration }} | cut -d'+' -f2)"
         OFFER="$(echo ${{ inputs.configuration }} | cut -d'+' -f3)"
@@ -71,6 +70,7 @@ jobs:
         RG="${{ inputs.resourceGroupName }}"
         GALLERY_EXISTS=false
         IDENTITY_EXISTS=false
+        IMGDEF_EXISTS=false
 
         echo "Checking if things exist..."
 
@@ -78,6 +78,10 @@ jobs:
           RG=$(az sig list --query "[?name=='$GALLERY'].resourceGroup" -o tsv)
           echo "Gallery $GALLERY found in $RG. Use existing..."
           GALLERY_EXISTS=true
+          if [ -n "$(az sig image-definition list --gallery-name $GALLERY -g $RG --query "[?identifier.offer=='$OFFER'&&identifier.publisher=='$PUBLISHER'&&identifier.sku=='$SKU'].name" -o tsv 2>/dev/null)" ]; then
+            echo "Image definition found. Use existing..."
+            IMGDEF_EXISTS=true
+          fi
         fi
 
         if [ -n "$(az identity show -n ${{ inputs.computeGalleryName }}-identity -g $RG --query id -o tsv 2>/dev/null)" ]; then
@@ -103,12 +107,19 @@ jobs:
                         architecture=$ARCHITECTURE \
                         vmSize=$VMSIZE \
                         osType=$OSTYPE \
+                        imgdefExists=$IMGDEF_EXISTS \
                         exists=$GALLERY_EXISTS \
                         identityExists=$IDENTITY_EXISTS --query properties.outputs.azureImageTemplateid.value -o tsv)
 
-        az resource wait --ids $azureImageTemplateid --api-version=2022-02-14 --custom "properties.lastRunStatus.runState=='Failed'||properties.lastRunStatus.runState=='Succeeded'"
+        az resource wait --ids $azureImageTemplateid --api-version=2022-02-14 --custom "properties.lastRunStatus.runState=='Running'"
         templateStatus=$(az resource show --ids $azureImageTemplateid --api-version=2022-02-14 --query "properties.lastRunStatus.runState" -o tsv)
-        
+
+        while [ "$templateStatus" == "Running" ]; do
+          echo "Image build state still running, continue to wait..."
+          az resource wait --ids $azureImageTemplateid --api-version=2022-02-14 --custom "properties.lastRunStatus.runState!='Running'"
+          templateStatus=$(az resource show --ids $azureImageTemplateid --api-version=2022-02-14 --query "properties.lastRunStatus.runState" -o tsv)
+        done
+
         if [ "$templateStatus" != "Succeeded" ]; then
           echo "Image creation has not succeeded. Last run state: $templateStatus"
           exit 1

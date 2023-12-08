@@ -17,6 +17,7 @@ param architecture string
 param vmSize string
 param osType string
 param exists bool
+param imgdefExists bool
 
 output azureImageTemplateid string = osType == 'Windows' ? imageTemplateWindows.outputs.id : imageTemplateLinux.outputs.id
 
@@ -27,7 +28,7 @@ resource gallery 'Microsoft.Compute/galleries@2021-10-01' = if(!exists) {
   tags: {}
 }
 
-resource galleryNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-01' = if(!exists) {
+resource galleryNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-01' = if(!imgdefExists) {
   parent: gallery
   name: imageDefinitionName
   location: location
@@ -73,7 +74,7 @@ resource galleryExisting 'Microsoft.Compute/galleries@2021-10-01' existing = if(
   name: galleryName
 }
 
-resource galleryExistingNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-01' existing = if(exists) {
+resource galleryExistingNameImageDefinition 'Microsoft.Compute/galleries/images@2021-10-01' existing = if(imgdefExists) {
   parent: galleryExisting
   name: imageDefinitionName
 }

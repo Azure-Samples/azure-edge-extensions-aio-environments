@@ -16,6 +16,7 @@ param architecture string = 'x64'
 param vmSize string = 'Standard_D2s_v3'
 param osType string = 'Windows'
 param exists bool = false
+param imgdefExists bool = false
 param identityExists bool = false
 
 output azureImageTemplateid string = imageBuilder.outputs.azureImageTemplateid
@@ -55,5 +56,6 @@ module imageBuilder 'image-builder.bicep' = {
     vmSize: vmSize
     osType: osType
     exists: exists
+    imgdefExists: imgdefExists
   }
 }
