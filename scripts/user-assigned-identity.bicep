@@ -44,7 +44,7 @@ resource galleryAccessRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-p
   }
 }
 
-resource customRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-01-preview' = {
+resource customRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-01-preview' = if(!identityExists) {
   name: guid(resourceGroup().id, (identityExists) ? userAssignedIdentityExistingResource.id: userAssignedIdentityResource.id, galleryAccessRole.id)
   properties: {
     principalId: (identityExists) ? userAssignedIdentityExistingResource.properties.principalId : userAssignedIdentityResource.properties.principalId
@@ -57,7 +57,7 @@ resource contributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018
   name: 'b24988ac-6180-42a0-ab88-20f7382dd24c' //'Contributor'
 }
 
-resource contributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-01-preview' = {
+resource contributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-08-01-preview' = if(!identityExists) {
   name: guid(subscription().id, (identityExists) ? userAssignedIdentityExistingResource.id: userAssignedIdentityResource.id, contributorRoleDefinition.id)
   properties: {
     principalId: (identityExists) ? userAssignedIdentityExistingResource.properties.principalId : userAssignedIdentityResource.properties.principalId
