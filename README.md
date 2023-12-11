@@ -44,7 +44,7 @@ Since this requires admin consent, you also execute the following command to obt
 az ad sp show --id bc313c14-388c-4e7d-a58e-70017303ee3b --query id -o tsv
 ```
 
-You need to store the command output in a secret name `AZURE_SP_OBJECT_ID` in the GitHub repository.
+You need to store the command output in a secret name `CUSTOM_LOCATIONS_OBJECT_ID` in the GitHub repository.
 
 ## Workflows
 
