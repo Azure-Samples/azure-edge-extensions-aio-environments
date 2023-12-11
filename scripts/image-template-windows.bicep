@@ -89,7 +89,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
               '"Machines": ['
                   '{'
                       '"LinuxNode": {'
-                          '"CpuCount": 8,'
+                          '"CpuCount": 4,'
                           '"MemoryInMB": 8192,'
                           '"DataSizeInGB": 30,'
                           '"LogSizeInGB": 4'
@@ -147,12 +147,13 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'PowerShell'
         runElevated: true
-        name: 'SaveKubeConfig'
+        name: 'SaveKubeConfig-InstallLocalPathProv'
         inline: [
           'Write-Host "Step 4: Save kubeconfig to c:\\scripts"'
           'Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:$false'
           'kubectl get pods -A --kubeconfig C:\\Scripts\\config'
-          'Kubectl get nodes --kubeconfig C:\\Scripts\\config'
+          'kubectl get nodes --kubeconfig C:\\Scripts\\config'
+          'kubectl apply -f https://raw.githubusercontent.com/Azure/AKS-Edge/main/samples/storage/local-path-provisioner/local-path-storage.yaml --kubeconfig C:\\Scripts\\config'
         ]
       }
       {
