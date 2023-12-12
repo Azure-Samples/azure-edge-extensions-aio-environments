@@ -17,9 +17,6 @@ on:
       imageVersion:
           required: true
           type: string
-      resourceGroupName:
-          required: true
-          type: string
       vmName:
         required: true
         type: string
@@ -62,11 +59,6 @@ on:
         default: '1.0.0'
         required: true
         type: string
-      resourceGroupName:
-        description: 'Azure VM Resource Group Name'
-        default: 'rg-arc-footprint'
-        required: true
-        type: string
       vmName:
         description: 'VM Name'
         default: 'arc-footprint'
@@ -86,7 +78,7 @@ jobs:
       imageDefinitionName: ${{ inputs.imageDefinitionName }}
       imageVersion: ${{ inputs.imageVersion }}
       location: ${{ inputs.location }}
-      resourceGroup: ${{ inputs.resourceGroupName }}
+      resourceGroup: rg-${{ inputs.vmName }}
       vmName: ${{ inputs.vmName }}
       vmSize: ${{ inputs.vmSize }}
       adminUsername: ${{ secrets.VMADMINUSERNAME }}
@@ -96,6 +88,9 @@ jobs:
       vmIdentityName: ${{ inputs.vmName }}-id
       grafanaDashboardName: footprint-${{github.run_id}}
       monitorName: footprint
+    outputs:
+      clusterName: ${{ env.clusterName }}
+      resourceGroup: ${{ env.resourceGroup }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -201,58 +196,10 @@ jobs:
                 az iot ops init --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\"; \
             \"}"
         fi
-    - name: Create monitoring resources
-      run: |
-        echo "Making sure necessary providers are registered..."
-        az provider register --namespace Microsoft.Insights --wait
-        az provider register --namespace Microsoft.AlertsManagement --wait
-        az extension add --name amg
-
-        workspaceId=$(az resource list --resource-type Microsoft.monitor/accounts --query "[?name=='$monitorName'&&resourceGroup=='$resourceGroup'].id" -o tsv)
-
-        if [ -z $workspaceId ]; then
-          echo "Creating new Azure Monitor workspace."
-          workspaceId="$(az resource create -g $resourceGroup --namespace microsoft.monitor --resource-type accounts --name $monitorName --properties "{}" --query id -o tsv)"
-        else
-          echo "Azure Monitor workspace already exists."
-        fi
-
-        grafanaIdentity=$(az grafana list --query "[?name=='$grafanaDashboardName'&&resourceGroup=='$resourceGroup'].identity.principalId" -o tsv)
-        if [ -z $(az grafana list --query "[?name=='$grafanaDashboardName'&&resourceGroup=='$resourceGroup'].name" -o tsv) ]; then
-          echo "Create Grafana resource in azure."
-          grafanaIdentity=$(az grafana create -n $grafanaDashboardName -g $resourceGroup --query "identity.principalId" -o tsv)
-        else
-          echo "Grafana resource ($grafanaDashboardName) already exists."
-        fi
-
-        subscriptionId=$(az account show --query id -o tsv)
-        az role assignment create --assignee $grafanaIdentity --role "Monitoring Data Reader" --scope /subscriptions/$subscriptionId
-
-        echo "Creating k8s-extension azuremonitor-metrics..."
-        az k8s-extension create --name azuremonitor-metrics \
-          --cluster-name $clusterName \
-          --resource-group $resourceGroup \
-          --cluster-type connectedClusters \
-          --extension-type Microsoft.AzureMonitor.Containers.Metrics \
-          --configuration-settings azure-monitor-workspace-resource-id=$workspaceId
-        
-        echo "Adding prometheus data source to Grafana..."
-        promUrl="$(az resource show --resource-type Microsoft.monitor/accounts --name $monitorName -g $resourceGroup --query properties.metrics.prometheusQueryEndpoint -o tsv)"
-        az grafana data-source create -n $grafanaDashboardName -g $resourceGroup --definition '{
-          "name": "Azure Managed Prometheus-1",
-          "type": "prometheus",
-          "access": "proxy",
-          "url": "'"$promUrl"'",
-          "jsonData": {
-            "httpMethod": "POST",
-            "azureCredentials": { "authType": "msi" }
-          }
-        }'
-        az grafana folder create -n $grafanaDashboardName -g $resourceGroup --title "Footprint Dashboards"
-        az grafana dashboard create \
-          -n $grafanaDashboardName \
-          -g $resourceGroup \
-          --title "Memory Footprint / Namespace (Workloads)" \
-          --folder "Footprint Dashboards" \
-          --definition $GITHUB_WORKSPACE/grafana/mem_by_ns.json
-          
+  Build-Monitoring:
+    uses: ./.github/workflows/build-monitoring.yaml
+    needs: Build-VM
+    with:
+      clusterName: ${{ needs.Build-VM.outputs.clusterName }}
+      resourceGroupName: ${{ needs.Build-VM.outputs.resourceGroup }}
+    secrets: inherit

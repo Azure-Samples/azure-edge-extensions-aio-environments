@@ -139,7 +139,6 @@ jobs:
       computeGalleryName: ${{ inputs.computeGalleryName }}
       imageDefinitionName: ${{ needs.Build-VHDX.outputs.configurationName }}
       imageVersion: ${{ needs.Build-VHDX.outputs.imageVersion }}
-      resourceGroupName: rg-arc-footprint
       vmName: ${{ needs.Build-VHDX.outputs.configurationName }}
       vmSize: ${{ needs.Build-VHDX.outputs.vmSize }}
     secrets: inherit

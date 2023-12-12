@@ -1,0 +1,91 @@
+name: Build Monitoring
+on:
+  workflow_call:
+    inputs:
+      resourceGroupName:
+          required: true
+          type: string
+      clusterName:
+          required: true
+          type: string
+  workflow_dispatch:
+    inputs:
+      clusterName:
+        description: 'Azure Arc Cluster Name'
+        required: true
+        type: string
+      resourceGroupName:
+        description: 'Azure VM Resource Group Name'
+        required: true
+        type: string
+jobs:
+  Build-Monitoring:
+    runs-on: ubuntu-latest
+    env:
+      resourceGroup: ${{ inputs.resourceGroupName }}
+      clusterName: ${{ inputs.clusterName }}
+      grafanaDashboardName: footprint-${{github.run_id}}
+      monitorName: footprint
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Log in with Azure
+      uses: azure/login@v1
+      with:
+        creds: '${{ secrets.AZURE_CREDENTIALS }}'
+    - name: Create monitoring resources
+      run: |
+        echo "Making sure necessary providers are registered..."
+        az provider register --namespace Microsoft.Insights --wait
+        az provider register --namespace Microsoft.AlertsManagement --wait
+        az extension add --name amg
+
+        workspaceId=$(az resource list --resource-type Microsoft.monitor/accounts --query "[?name=='$monitorName'&&resourceGroup=='$resourceGroup'].id" -o tsv)
+
+        if [ -z $workspaceId ]; then
+          echo "Creating new Azure Monitor workspace."
+          workspaceId="$(az resource create -g $resourceGroup --namespace microsoft.monitor --resource-type accounts --name $monitorName --properties "{}" --query id -o tsv)"
+        else
+          echo "Azure Monitor workspace already exists."
+        fi
+
+        grafanaIdentity=$(az grafana list --query "[?name=='$grafanaDashboardName'&&resourceGroup=='$resourceGroup'].identity.principalId" -o tsv)
+        if [ -z $(az grafana list --query "[?name=='$grafanaDashboardName'&&resourceGroup=='$resourceGroup'].name" -o tsv) ]; then
+          echo "Create Grafana resource in azure."
+          grafanaIdentity=$(az grafana create -n $grafanaDashboardName -g $resourceGroup --query "identity.principalId" -o tsv)
+        else
+          echo "Grafana resource ($grafanaDashboardName) already exists."
+        fi
+
+        subscriptionId=$(az account show --query id -o tsv)
+        az role assignment create --assignee $grafanaIdentity --role "Monitoring Data Reader" --scope /subscriptions/$subscriptionId
+
+        echo "Creating k8s-extension azuremonitor-metrics..."
+        az k8s-extension create --name azuremonitor-metrics \
+          --cluster-name $clusterName \
+          --resource-group $resourceGroup \
+          --cluster-type connectedClusters \
+          --extension-type Microsoft.AzureMonitor.Containers.Metrics \
+          --configuration-settings azure-monitor-workspace-resource-id=$workspaceId
+        
+        echo "Adding prometheus data source to Grafana..."
+        promUrl="$(az resource show --resource-type Microsoft.monitor/accounts --name $monitorName -g $resourceGroup --query properties.metrics.prometheusQueryEndpoint -o tsv)"
+        az grafana data-source create -n $grafanaDashboardName -g $resourceGroup --definition '{
+          "name": "Azure Managed Prometheus-1",
+          "type": "prometheus",
+          "access": "proxy",
+          "url": "'"$promUrl"'",
+          "jsonData": {
+            "httpMethod": "POST",
+            "azureCredentials": { "authType": "msi" }
+          }
+        }'
+        az grafana folder create -n $grafanaDashboardName -g $resourceGroup --title "Footprint Dashboards"
+        az grafana dashboard create \
+          -n $grafanaDashboardName \
+          -g $resourceGroup \
+          --title "Memory Footprint / Namespace (Workloads)" \
+          --folder "Footprint Dashboards" \
+          --definition $GITHUB_WORKSPACE/grafana/mem_by_ns.json
+          
