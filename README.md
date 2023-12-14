@@ -6,7 +6,12 @@ This infrastructure enables you to install instrumentation tools and collect mem
 
 ## Setup
 
-You just have to fork this repository and run the PowerShell script `setup.ps1` to create the required Service Principal, Role Assignments and GitHub Secrets.
+You just have to fork this repository and run the PowerShell script
+
+[`./setup.ps1`](./setup.ps1)
+
+to create the required Service Principal, Role Assignments and GitHub Secrets.
+
 You have to provide the following parameters to the script:
 
 - Azure Subscription Id
