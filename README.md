@@ -4,9 +4,19 @@ This repository sets up the infrastructure to create vhdx images and VMs for the
 Because of the nature of efficiency, customers demand a low memory footprint to save costs in terms of hardware and devices.
 This infrastructure enables you to install instrumentation tools and collect memory dumps components.
 
-## Setup
+## Getting Started
 
-You just have to fork this repository and run the PowerShell script
+### Prerequisites
+
+Fork this repository and run
+
+`az login --tenant <tenant-id>`
+
+`az account set --subscription <subscription-id>`
+
+### Setup
+
+Execute the PowerShell script
 
 [`./setup.ps1`](./setup.ps1)
 
