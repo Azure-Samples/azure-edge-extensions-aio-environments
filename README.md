@@ -58,7 +58,7 @@ It installs the corresponding version of [AKS-EE](https://learn.microsoft.com/en
 Just navigate to the GitHub Actions of the repository and select the **Build VHDX** workflow. You can now start a workflow run by clicking on the **Run workflow** button and specifying all parameters and the image configuration.
 If you check the **Create VM from image** checkbox, the workflow will automatically create a VM from image by starting the **Build VM** pipeline.
 
-<img src='images/build-vhdx.png' width='40%' height='40%'>
+<img src='images/build-vhdx.png' width='25%' height='25%'>
 
 ### VM Creation
 
@@ -73,14 +73,14 @@ As mentioned in section [How to create a new image](#how-to-create-a-new-image),
 But you can also start a workflow run manually by submitting the right parameters to point to an existing image. Due to reusability of os disks you can create multiple VMs based on the same image.
 Monitoring resources creation is automatically triggered via separate pipeline, see [Monitoring](#monitoring) section for more details.
 
-<img src='images/build-vm.png' width='40%' height='40%'>
+<img src='images/build-vm.png' width='25%' height='25%'>
 
 ### Monitoring
 
 Azure Monitoring resources like Log Analytics and Grafana are created by the **Build Monitoring** pipeline. This workflow is automatically triggered by the **Build VM** pipeline but you have the chance to manually run it as well.
 You can also run the **Build Monitoring** workflow manually to create monitoring resources for an existing cluster.
 
-<img src='images/build-monitoring.png' width='40%' height='40%'>
+<img src='images/build-monitoring.png' width='25%' height='25%'>
 
 #### Grafana Dashboard
 
