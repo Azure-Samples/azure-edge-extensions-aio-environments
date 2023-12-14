@@ -4,7 +4,19 @@ This repository sets up the infrastructure to create vhdx images and VMs for the
 Because of the nature of efficiency, customers demand a low memory footprint to save costs in terms of hardware and devices.
 This infrastructure enables you to install instrumentation tools and collect memory dumps components.
 
-## Pre-requisites
+## Setup
+
+You just have to fork this repository and run the PowerShell script `setup.ps1` to create the required Service Principal, Role Assignments and GitHub Secrets.
+You have to provide the following parameters to the script:
+
+- Azure Subscription Id
+- Service Principal Name
+- VM Admin Username (for the VMs created based on the images)
+- VM Admin Password (for the VMs created based on the images)
+
+<details>
+
+  <summary>The script executes the steps described in the following sections:</summary>
 
 ### Azure Subscription Access
 
@@ -14,15 +26,26 @@ This infrastructure enables you to install instrumentation tools and collect mem
 az ad sp create-for-rbac --name "myApp" --role owner \
                                 --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group} \
                                 --json-auth
+```
+
+You have to store the output of the command in a secret named `AZURE_CREDENTIALS` in the GitHub repository.
+And you have to store the clientId, clientSecret and objectId in separate secrets named `AZURE_SP_CLIENT_ID`, `AZURE_SP_CLIENT_SECRET` and `AZURE_SP_OBJECT_ID` in the GitHub repository.
+
+You can obtain the objectId by executing the following command:
+
+```sh
+# Get the objectId of the sp
+az ad sp show --id <client-id> --query objectId -o tsv
+```
+
+```sh
 # Create role assignment for the SP to create Grafana dashboards
 az role assignment create --assignee <client-id> --role "Grafana Admin" --scope /subscriptions/<subscription-id>
 ```
 
-### Azure VM Sizes
-
-Since nested virtualization is required to install AKS-EE on Windows, you need to select a VM size that supports this feature, such as Dv5 or Dsv5 series. For more information, you can refer to [hardware requirements](https://learn.microsoft.com/en-us/azure/aks/hybrid/aks-edge-system-requirements#hardware-requirements).
-
 ### GitHub Secrets
+
+GitHub secrets that are required for the workflows to run:
 
 | Secret | Description |
 | ------------- | ------------- |
@@ -45,6 +68,14 @@ az ad sp show --id bc313c14-388c-4e7d-a58e-70017303ee3b --query id -o tsv
 ```
 
 You need to store the command output in a secret name `CUSTOM_LOCATIONS_OBJECT_ID` in the GitHub repository.
+
+</details>
+
+## Pre-requisites
+
+### Azure VM Sizes
+
+Since nested virtualization is required to install AKS-EE on Windows, you need to select a VM size that supports this feature, such as Dv5 or Dsv5 series. For more information, you can refer to [hardware requirements](https://learn.microsoft.com/en-us/azure/aks/hybrid/aks-edge-system-requirements#hardware-requirements).
 
 ## Workflows
 
