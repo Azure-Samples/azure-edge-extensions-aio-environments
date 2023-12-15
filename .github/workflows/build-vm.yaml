@@ -188,7 +188,7 @@ jobs:
             --force-update \
             --settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \
                 kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
-                az login --service-principal -u \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" -p \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --tenant $tenantId; \
+                az login --identity; \
                 az extension add --name connectedk8s; \
                 az extension add --name azure-iot-ops; \
                 az connectedk8s connect -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
