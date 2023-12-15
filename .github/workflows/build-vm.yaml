@@ -138,7 +138,7 @@ jobs:
         principalId="$(az identity show --name $vmIdentityName -g $resourceGroup --query principalId -o tsv)"
 
         echo "Creating role assignment for $vmIdentityName (principalId: $principalId)..."
-        az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role "Contributor" --scope /subscriptions/$subscriptionId
+        az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role "Owner" --scope /subscriptions/$subscriptionId
         az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role "Owner" --scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroup
 
         echo "Creating VM..."
@@ -188,7 +188,7 @@ jobs:
             --force-update \
             --settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \
                 kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
-                az login --identity; \
+                az login --service-principal -u \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" -p \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --tenant $tenantId; \
                 az extension add --name connectedk8s; \
                 az extension add --name azure-iot-ops; \
                 az connectedk8s connect -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
