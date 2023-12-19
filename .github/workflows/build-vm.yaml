@@ -102,8 +102,8 @@ jobs:
     - name: Validate parameters
       run: |
         echo "Checking if VM already exists..."
-        vm=$(az vm list --query "[?name=='$vmName'&&resourceGroup=='$resourceGroup'].id" -o tsv)
-        if [ -n "$vm" ]; then
+        vm=$(az vm show -n $vmName -g $resourceGroup --query id -o tsv)
+        if [ -z $vm ]; then
           echo "Error: VM $vmName already exists. Please delete existing VM or re-run with different name."
           exit 1
         fi
