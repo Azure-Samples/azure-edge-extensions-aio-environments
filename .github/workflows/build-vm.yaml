@@ -102,11 +102,11 @@ jobs:
     - name: Validate parameters
       run: |
         echo "Checking if VM already exists..."
-        vm=$(az vm show -n $vmName -g $resourceGroup --query id -o tsv)
-        if [ -n "$vm" ]; then
-          echo "Error: VM $vmName already exists. Please delete existing VM or re-run with different name."
+        if [ -n "$(az vm show -n $vmName -g $resourceGroup --query id -o tsv 2>/dev/null)" ]; then
+          echo "Error: VM $vmName in RG $resourceGroup already exists. Please delete existing VM or re-run with different name."
           exit 1
         fi
+        echo "VM parameters are valid..."
     - name: Wait for Image to be created
       run: |
         echo "Wait for image to be created..."
@@ -178,8 +178,8 @@ jobs:
         az keyvault set-policy -n $kvName -g $resourceGroup --object-id ${{ secrets.AZURE_SP_OBJECT_ID }} --secret-permissions all --key-permissions all --storage-permissions all --certificate-permissions all
         az keyvault set-policy -n $kvName -g $resourceGroup --object-id $principalId --secret-permissions all --key-permissions all --storage-permissions all --certificate-permissions all
 
+        echo "Creating VM extension for $osType with force update..."
         if [ $osType == "Windows" ]; then
-          echo "Creating VM extension with force update..."
           az vm extension set \
             --resource-group $resourceGroup \
             --vm-name $vmName \
@@ -189,15 +189,35 @@ jobs:
             --settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \
                 kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
                 az login --identity; \
-                az extension add --name connectedk8s; \
+                az extension add --name connectedk8s --version 1.6.0; \
                 az extension add --name azure-iot-ops; \
-                az connectedk8s connect -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
+                az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
                 Remove-Item -LiteralPath C:\\Windows\\System32\\config\\systemprofile\\.azure\\AzureArcCharts -Recurse -Force; \
-                az connectedk8s enable-features -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
+                az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
                 \$env:KUBECONFIG='C:\\Scripts\\config'; \
-                az iot ops init --no-progress --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\"; \
+                az iot ops init --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --no-progress; \
+            \"}"
+        else
+          az vm extension set \
+            --resource-group $resourceGroup \
+            --vm-name $vmName \
+            --name customScript \
+            --publisher Microsoft.Azure.Extensions \
+            --force-update \
+            --settings "{\"commandToExecute\": \" \
+                curl -sfL https://get.k3s.io | sh - && \
+                export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
+                kubectl config use-context default && \
+                kubectl get pods -A -v6 && \
+                az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --tenant $tenantId && \
+                az extension add --name connectedk8s --version 1.6.0 && \
+                az extension add --name azure-iot-ops && \
+                az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
+                az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
+                az iot ops init --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --no-progress \
             \"}"
         fi
+
   Build-Monitoring:
     uses: ./.github/workflows/build-monitoring.yaml
     needs: Build-VM

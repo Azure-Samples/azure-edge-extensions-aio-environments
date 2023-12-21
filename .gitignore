@@ -398,3 +398,4 @@ FodyWeavers.xsd
 *.sln.iml
 scripts/single-commands.txt
 scripts/test.sh
+scripts/vmvalidation.sh
