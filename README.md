@@ -8,7 +8,10 @@ This infrastructure enables you to install instrumentation tools and collect mem
 
 ### Prerequisites
 
-Fork this repository and run
+1. Install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
+2. Install [GitHub CLI](https://cli.github.com/)
+3. An Azure subscription
+4. Fork this repository and run
 
 `az login --tenant <tenant-id>`
 
