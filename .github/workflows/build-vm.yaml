@@ -102,7 +102,8 @@ jobs:
     - name: Validate parameters
       run: |
         echo "Checking if VM already exists..."
-        if [ -n "$(az vm show -n $vmName -g $resourceGroup --query id -o tsv 2>/dev/null)" ]; then
+        vm=$(az vm show -n $vmName -g $resourceGroup 2>/dev/null | jq -r .name)
+        if [ -n "$vm" ]; then
           echo "Error: VM $vmName in RG $resourceGroup already exists. Please delete existing VM or re-run with different name."
           exit 1
         fi
@@ -224,4 +225,5 @@ jobs:
     with:
       clusterName: ${{ needs.Build-VM.outputs.clusterName }}
       resourceGroupName: ${{ needs.Build-VM.outputs.resourceGroup }}
+      vmName: $vmName
     secrets: inherit
