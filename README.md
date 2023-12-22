@@ -53,7 +53,7 @@ You can obtain the objectId by executing the following command:
 
 ```sh
 # Get the objectId of the sp
-az ad sp show --id <client-id> --query objectId -o tsv
+az ad sp show --id <client-id> --query id -o tsv
 ```
 
 ```sh
@@ -129,6 +129,8 @@ Monitoring resources creation is automatically triggered via separate pipeline, 
 Azure Monitoring resources like Log Analytics and Grafana are created by the **Build Monitoring** pipeline. This workflow is automatically triggered by the **Build VM** pipeline but you have the chance to manually run it as well.
 You can also run the **Build Monitoring** workflow manually to create monitoring resources for an existing cluster.
 
+> Note: This pipeline will skip installing the azuremonitor-extension for arc-clusters if the provided cluster is not found
+
 <img src='images/build-monitoring.png' width='25%' height='25%'>
 
 #### Grafana Dashboard
@@ -140,3 +142,6 @@ After running the Build-VM (or manually running the Build-Monitoring) pipeline, 
 id=$(az ad signed-in-user show --query id -o tsv)
 az role assignment create --assignee $id --role "Grafana Admin"
 ```
+#### Hostmem Usage
+
+To view memory usage per process. Navigate to the Log Analytics workspace and run queries against the ResidentSetSummary_CL table. Note it may take some time for metrics to appear. 
