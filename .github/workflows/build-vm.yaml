@@ -91,6 +91,7 @@ jobs:
     outputs:
       clusterName: ${{ env.clusterName }}
       resourceGroup: ${{ env.resourceGroup }}
+      vmName: ${{ env.vmName }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -178,6 +179,9 @@ jobs:
         kvId=$(az keyvault create -n $kvName -g $resourceGroup -o tsv --no-self-perms --query id -o tsv)
         az keyvault set-policy -n $kvName -g $resourceGroup --object-id ${{ secrets.AZURE_SP_OBJECT_ID }} --secret-permissions all --key-permissions all --storage-permissions all --certificate-permissions all
         az keyvault set-policy -n $kvName -g $resourceGroup --object-id $principalId --secret-permissions all --key-permissions all --storage-permissions all --certificate-permissions all
+        
+        echo "Encode secret for security reasons..."
+        encodedBase64Secret=$(echo ${{ secrets.AZURE_SP_CLIENT_SECRET }} | base64)
 
         echo "Creating VM extension for $osType with force update..."
         if [ $osType == "Windows" ]; then
@@ -196,7 +200,8 @@ jobs:
                 Remove-Item -LiteralPath C:\\Windows\\System32\\config\\systemprofile\\.azure\\AzureArcCharts -Recurse -Force; \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
                 \$env:KUBECONFIG='C:\\Scripts\\config'; \
-                az iot ops init --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --no-progress; \
+                \$decodedSecret = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('$encodedBase64Secret')); \
+                az iot ops init --no-progress --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\"; \
             \"}"
         else
           az vm extension set \
@@ -210,12 +215,13 @@ jobs:
                 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
                 kubectl config use-context default && \
                 kubectl get pods -A -v6 && \
-                az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --tenant $tenantId && \
+                decodedSecret=$(echo $encodedBase64Secret | base64 -d) && \
+                az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"\$decodedSecret\"\" --tenant $tenantId && \
                 az extension add --name connectedk8s --version 1.6.0 && \
                 az extension add --name azure-iot-ops && \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
-                az iot ops init --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --no-progress \
+                az iot ops init --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\" --no-progress \
             \"}"
         fi
 
@@ -225,5 +231,5 @@ jobs:
     with:
       clusterName: ${{ needs.Build-VM.outputs.clusterName }}
       resourceGroupName: ${{ needs.Build-VM.outputs.resourceGroup }}
-      vmName: $vmName
+      vmName: ${{ needs.Build-VM.outputs.vmName }}
     secrets: inherit
