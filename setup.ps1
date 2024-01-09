@@ -29,12 +29,12 @@ az role assignment create --assignee $azureCredentials.clientId --role "Grafana 
 $spObjectId = az ad sp show --id $azureCredentials.clientId --query id -o tsv
 
 # Get Custom Location SP Object Id
-az ad sp show --id bc313c14-388c-4e7d-a58e-70017303ee3b --query id -o tsv
+$customLocationsObjectId = az ad sp show --id bc313c14-388c-4e7d-a58e-70017303ee3b --query id -o tsv
 
 gh secret set AZURE_CREDENTIALS -b $jsonAzCreds
 gh secret set AZURE_SP_CLIENT_ID -b $azureCredentials.clientId
 gh secret set AZURE_SP_CLIENT_SECRET -b $azureCredentials.clientSecret
 gh secret set AZURE_SP_OBJECT_ID -b $spObjectId
-gh secret set CUSTOM_LOCATIONS_OBJECT_ID -b $spObjectId
+gh secret set CUSTOM_LOCATIONS_OBJECT_ID -b $customLocationsObjectId
 gh secret set VMADMINUSERNAME -b $VmAdminUsername
-gh secret set VMADMINPASSWORD -b $VmAdminPassword
+gh secret set VMADMINPASSWORD -b ($VmAdminPassword | ConvertFrom-SecureString -AsPlainText)
