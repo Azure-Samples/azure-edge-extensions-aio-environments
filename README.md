@@ -19,9 +19,14 @@ This infrastructure enables you to install instrumentation tools and collect mem
 
 ### Setup
 
-Execute the PowerShell script
+Execute the PowerShell script [`./setup.ps1`](./setup.ps1):
 
-[`./setup.ps1`](./setup.ps1)
+```powershell
+./setup.ps1 -ForkedRepo <owner/forked-repo-name> -SubscriptionId <subid> -ServicePrincipalName <name-for-new-sp> -VmAdminUsername <vm-usrname>
+
+# or 
+./setup.ps1 <owner/forked-repo-name> <subid> <name-for-new-sp> <vm-usrname>
+```
 
 to create the required Service Principal, Role Assignments and GitHub Secrets.
 
@@ -46,8 +51,8 @@ az ad sp create-for-rbac --name "myApp" --role owner \
                                 --json-auth
 ```
 
-You have to store the output of the command in a secret named `AZURE_CREDENTIALS` in the GitHub repository.
-And you have to store the clientId, clientSecret and objectId in separate secrets named `AZURE_SP_CLIENT_ID`, `AZURE_SP_CLIENT_SECRET` and `AZURE_SP_OBJECT_ID` in the GitHub repository.
+Due to flexibility reasons, the output JSON of the above command doesn´t need to be stored.
+Instead, you have to store the single properties subscriptionId, tenantId, clientId, clientSecret and objectId in separate secrets named `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`, `AZURE_SP_CLIENT_ID`, `AZURE_SP_CLIENT_SECRET` and `AZURE_SP_OBJECT_ID` in the GitHub repository.
 
 You can obtain the objectId by executing the following command:
 
@@ -67,7 +72,8 @@ GitHub secrets that are required for the workflows to run:
 
 | Secret | Description |
 | ------------- | ------------- |
-| AZURE_CREDENTIALS | JSON output from az ad sp create-for-rbac command |
+| AZURE_SUBSCRIPTION_ID | subscription id (also part of the output from az ad sp create-for-rbac command) |
+| AZURE_TENANT_ID | tenant id (also part of the output from az ad sp create-for-rbac command) |
 | AZURE_SP_CLIENT_ID | client id from az ad sp create-for-rbac command |
 | AZURE_SP_CLIENT_SECRET | client secret from az ad sp create-for-rbac command |
 | AZURE_SP_OBJECT_ID | object id from az ad sp create-for-rbac command |
