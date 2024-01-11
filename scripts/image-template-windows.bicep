@@ -33,7 +33,6 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'PowerShell'
         name: 'InstallWindosPerformanceToolkit'
-        runElevated: true
         inline: [
           'Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=2243390 -OutFile \'C:\\Program Files\\adksetup.exe\''
           'cd \'C:\\Program Files\'; .\\adksetup.exe /quiet /installpath "C:\\Program Files\\ADK" /features OptionId.WindowsPerformanceToolkit'
@@ -50,8 +49,8 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'PowerShell'
         name: 'ConfigureHostmemUsageCollector'
-        runElevated: true
         inline: [
+          '$ProgressPreference = \'SilentlyContinue\'; Set-ExecutionPolicy Bypass -Scope LocalMachine -Force'
           'New-Item -Path "C:\\" -Name "HostmemLogs" -ItemType Directory'
           'New-Item -Path "C:\\HostmemLogs\\" -Name "traces" -ItemType Directory'
           '$wpaProfile=@"'
@@ -403,8 +402,8 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'PowerShell'
         name: 'RegisterHostMemCollectorScript'
-        runElevated: true
         inline: [
+          '$ProgressPreference = \'SilentlyContinue\'; Set-ExecutionPolicy Bypass -Scope LocalMachine -Force'
           'Register-ScheduledJob -Name "Collect-HostmemUsage" -RunEvery (New-TimeSpan -Minutes 4) -ScriptBlock {'
              'wpr -start ResidentSet'
              'Start-sleep -Seconds 60'
@@ -416,14 +415,12 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'PowerShell'
         name: 'InstallAzureCLI'
-        runElevated: true
         inline: [
-          '$ProgressPreference = \'SilentlyContinue\'; Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList \'/I AzureCLI.msi /quiet\'; Remove-Item .\\AzureCLI.msi'
+          '$ProgressPreference = \'SilentlyContinue\'; Set-ExecutionPolicy Bypass -Scope LocalMachine -Force; Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList \'/I AzureCLI.msi /quiet\'; Remove-Item .\\AzureCLI.msi'
         ]
       }
       {
         type: 'PowerShell'
-        runElevated: true
         name: 'AzSetup'
         inline: [
           'Invoke-WebRequest -Uri https://secure.globalsign.net/cacert/Root-R1.crt -OutFile c:\\globalsignR1.crt'
@@ -433,7 +430,6 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'PowerShell'
         name: 'DownloadAksEdgeModules'
-        runElevated: true
         inline: [
           '$ProgressPreference = \'SilentlyContinue\''
           'Set-ExecutionPolicy Bypass -Scope LocalMachine -Force'
@@ -447,7 +443,6 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'PowerShell'
         name: 'PrepAksEEConfig'
-        runElevated: true
         inline: [
           'Write-Host "Step 2 : Create config files"'
           '$installDir=\'C:\\scripts\\aksedge\''
@@ -518,7 +513,6 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'PowerShell'
         name: 'ResumeInstall'
-        runElevated: true
         inline: [
           '$ConfirmPreference = \'None\'; $ErrorActionPreference = \'Stop\''
           '$installDir=\'C:\\scripts\\aksedge\''
@@ -529,8 +523,6 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       }
       {
         type: 'PowerShell'
-        runElevated: true
-        name: 'SaveKubeConfig-InstallLocalPathProv'
         inline: [
           'Write-Host "Step 4: Save kubeconfig to c:\\scripts"'
           'Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:$false'
@@ -541,7 +533,6 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       }
       {
         type: 'PowerShell'
-        runElevated: true
         name: 'CleanupAksRepo'
         inline: [
           'Write-Host "Step 5: Cleanup repo files. Leave config files"'
