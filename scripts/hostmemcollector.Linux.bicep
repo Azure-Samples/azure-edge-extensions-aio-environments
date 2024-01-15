@@ -11,43 +11,39 @@ resource hostmemcollectorrule 'Microsoft.Insights/dataCollectionRules@2022-06-01
   properties: {
     dataCollectionEndpointId: dataCollectionEndpointId
     streamDeclarations: {
-      'Custom-ResidentSetSummary_CL': {
+      'Custom-CgroupMem_CL': {
         columns: [
           {
             name: 'TimeGenerated'
             type: 'datetime'
           }
           {
-            name: 'TraceProcessName'
+            name: 'Cgroup'
             type: 'string'
           }
           {
-            name: 'Process'
+            name: 'ContainerName'
             type: 'string'
           }
           {
-            name: 'MMList'
+            name: 'PodName'
             type: 'string'
           }
           {
-            name: 'PCategory'
+            name: 'Namespace'
             type: 'string'
           }
           {
-            name: 'Description'
-            type: 'string'
+            name: 'MemoryUsage'
+            type: 'real'
           }
           {
-            name: 'PPriority'
-            type: 'string'
-          }
-          {
-            name: 'SizeMB'
+            name: 'TotalCache'
             type: 'real'
           }
         ]
       }
-      'Custom-Text-ResidentSetSummary_CL': {
+      'Custom-Text-CgroupMem_CL': {
         columns: [
           {
             name: 'TimeGenerated'
@@ -93,10 +89,10 @@ resource hostmemcollectorrule 'Microsoft.Insights/dataCollectionRules@2022-06-01
       logFiles: [
         {
           streams: [
-            'Custom-Text-ResidentSetSummary_CL'
+            'Custom-Text-CgroupMem_CL'
           ]
           filePatterns: [
-            'C:\\HostmemLogs\\Resident_Set_Summary_Table*'
+            '/root/hostmem/cgroup_memory_usage*'
           ]
           format: 'text'
           settings: {
@@ -104,7 +100,7 @@ resource hostmemcollectorrule 'Microsoft.Insights/dataCollectionRules@2022-06-01
               recordStartTimestampFormat: 'ISO 8601'
             }
           }
-          name: 'Custom-Text-ResidentSetSummary_C'
+          name: 'Custom-Text-CgroupMem_C'
         }
       ]
     }
@@ -122,23 +118,13 @@ resource hostmemcollectorrule 'Microsoft.Insights/dataCollectionRules@2022-06-01
     dataFlows: [
       {
         streams: [
-          'Custom-Text-ResidentSetSummary_CL'
+          'Custom-Text-CgroupMem_CL'
         ]
         destinations: [
           'la-workspace'
         ]
-        transformKql: 'source | extend line=split([\'RawData\'],\'|\') | where tostring(line[0]) != "Process Name" | project TraceProcessName=tostring(line[0]),Process=tostring(line[1]),MMList=tostring(line[2]),PCategory=tostring(line[3]),Description=tostring(line[4]),PPriority=tostring(line[5]),TimeGenerated=todatetime(line[6]),SizeMB=todouble(line[7])'
-        outputStream: 'Custom-ResidentSetSummary_CL'
-      }
-      {
-        streams: [
-          'Microsoft-InsightsMetrics'
-        ]
-        destinations: [
-          'azureMonitorMetrics-default'
-        ]
-        transformKql: 'source'
-        outputStream: 'Microsoft-InsightsMetrics'
+        transformKql: 'source | extend line=split([\'RawData\'],\'|\') | where tostring(line[0]) != "Cgroup" | project Cgroup=tostring(line[0]),MemoryUsage=todouble(line[1]),TotalCache=todouble(line[2]),ContainerName=tostring(line[3]),PodName=tostring(line[4]),Namespace=tostring(line[5]),TimeGenerated=todatetime(line[6])'
+        outputStream: 'Custom-CgroupMem_CL'
       }
     ]
   }

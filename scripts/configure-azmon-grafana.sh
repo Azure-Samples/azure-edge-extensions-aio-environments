@@ -58,6 +58,7 @@ fi
 location=$(az group show -n $resourceGroup --query location -o tsv)
 subscriptionId=$(az account show --query id -o tsv)
 monitor_resource=$(az resource show --resource-type Microsoft.monitor/accounts --name $monitorName --resource-group $resourceGroup 2>/dev/null | jq -c .)
+osType=$(az vm show --name $vmName --resource-group $resourceGroup --query 'storageProfile.osDisk.osType' -o tsv)
 
 if [ -z $monitor_resource ]; then
   echo "Creating new Azure Monitor workspace..."
@@ -68,7 +69,11 @@ fi
 
 if [[ -z $(az vm extension show --name AzureMonitorWindowsAgent --vm-name $vmName -g $resourceGroup 2>/dev/null | jq .name) ]]; then
   echo "Installing AzureMonitor agent extension on $vmName..."
-  az vm extension set --name AzureMonitorWindowsAgent --publisher Microsoft.Azure.Monitor --vm-name $vmName -g $resourceGroup
+  if [ $osType == "Windows" ]; then
+    az vm extension set --name AzureMonitorWindowsAgent --publisher Microsoft.Azure.Monitor --vm-name $vmName -g $resourceGroup
+  else
+    az vm extension set --name AzureMonitorLinuxAgent --publisher Microsoft.Azure.Monitor --vm-name $vmName -g $resourceGroup
+  fi
 fi
 
 grafana=$(az grafana list --query "[?resourceGroup=='$resourceGroup']" -o json | jq -c '.[0]')

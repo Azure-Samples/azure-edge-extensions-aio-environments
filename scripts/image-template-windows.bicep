@@ -28,7 +28,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
     }
   }
   properties: {
-    buildTimeoutInMinutes: 120
+    buildTimeoutInMinutes: 180
     customize: [
       {
         type: 'PowerShell'
@@ -401,15 +401,21 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       }
       {
         type: 'PowerShell'
-        name: 'RegisterHostMemCollectorScript'
+        name: 'WriteHostMemCollectorScript'
         inline: [
           '$ProgressPreference = \'SilentlyContinue\'; Set-ExecutionPolicy Bypass -Scope LocalMachine -Force'
-          'Register-ScheduledJob -Name "Collect-HostmemUsage" -RunEvery (New-TimeSpan -Minutes 4) -ScriptBlock {'
-             'wpr -start ResidentSet'
-             'Start-sleep -Seconds 60'
-             'wpr -stop C:\\HostmemLogs\\traces\\residentset.etl'
-             'wpaexporter C:\\HostmemLogs\\traces\\residentset.etl -profile C:\\HostmemLogs\\traces\\hostmemusage.wpaProfile -outputFolder C:\\HostmemLogs -delimiter "|"'
-          '}'
+          '$scriptPath="C:\\HostmemLogs\\collect.ps1"'
+          '$scriptBlock=@"'
+          'wpr -start ResidentSet'
+          'Start-sleep -Seconds 60'
+          'wpr -stop C:\\HostmemLogs\\traces\\residentset.etl'
+          'wpaexporter C:\\HostmemLogs\\traces\\residentset.etl -profile C:\\HostmemLogs\\traces\\hostmemusage.wpaProfile -outputFolder C:\\HostmemLogs -delimiter "|"'
+          '"@'
+          'Set-content -Path $scriptPath -Value $scriptBlock -Force'
+          '$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\\HostmemLogs\\collect.ps1"'
+          '$trigger = New-scheduledtasktrigger -Once -At (get-date).AddMinutes(1).ToString("HH:mm") -RepetitionInterval (New-TimeSpan -Minutes 5)'
+          '$principal = New-ScheduledTaskPrincipal -UserID "NT AUTHORITY\\SYSTEM" -LogonType ServiceAccount -RunLevel Highest'
+          'Register-ScheduledTask -TaskName "collect-hostmem" -Action $action -Trigger $trigger -Principal $principal -AsJob'
         ]
       }
       {

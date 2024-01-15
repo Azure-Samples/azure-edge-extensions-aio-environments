@@ -45,13 +45,7 @@ BASEDIR=$(dirname $0)
 monitor_resource=$(az resource show --resource-type Microsoft.monitor/accounts --name $monitorName --resource-group $resourceGroup | jq -c .)
 vmResource=$(az vm show --name $vmName --resource-group $resourceGroup | jq -c .)
 osType=$(echo $vmResource | jq -r .storageProfile.osDisk.osType)
-ruleName="$osType-hostmemcollector"
-
-echo "Ensure ADK is installed and job is started..."
-az vm run-command create -g $resourceGroup --vm-name $vmName --script "Invoke-WebRequest -Uri https://go.microsoft.com/fwlink/?linkid=2243390 -OutFile 'C:\\Program Files\\adksetup.exe'" --run-command-name "DownloadADK" 
-az vm run-command create -g $resourceGroup --vm-name $vmName --script "cd 'C:\\Program Files'; .\\adksetup.exe /quiet /installpath 'C:\\Program Files\\ADK' /features OptionId.WindowsPerformanceToolkit" --run-command-name "InstallADK"
-az vm run-command create -g $resourceGroup --vm-name $vmName --script "wpaexporter C:\\HostmemLogs\\traces\\residentset.etl -profile C:\\HostmemLogs\\traces\\hostmemusage.wpaProfile -outputFolder C:\\HostmemLogs -delimiter \"|\"" --run-command-name "InitRun"
-az vm run-command create -g $resourceGroup --vm-name $vmName --script "Start-ScheduledTask -TaskName Collect-HostmemUsage" --run-command-name "StartJob"
+ruleName="$vmName-hostmemcollector"
 
 laId=$(az monitor log-analytics workspace show --name $laName -g $resourceGroup 2>/dev/null | jq -r .id)
 if [ -z $laId ]; then
@@ -63,10 +57,11 @@ fi
 
 if [ "$osType" == "Windows" ]; then
     tableName="ResidentSetSummary_CL"
-    columns="TimeGenerated=datetime TraceProcessName=string SizeMB=real Process=string SnapshotTime=datetime PCategory=string PPriority=string Description=string MMList=string"
+    columns="TimeGenerated=datetime TraceProcessName=string SizeMB=real Process=string PCategory=string PPriority=string Description=string MMList=string"
+    #az vm run-command create -g $resourceGroup --vm-name $vmName --script "Register-ScheduledJob -Name "Collect-HostmemUsage" -RunEvery (New-TimeSpan -Minutes 4) -FilePath \"C:\HostmemLogs\collect.ps1\"" --run-command-name "StartJob"
 else
-    echo "This script only supports Windows OS at this time..."
-    exit 1
+    tableName="CgroupMem_CL"
+    columns="TimeGenerated=datetime Cgroup=string MemoryUsage=real TotalCache=real ContainerName=string PodName=string Namespace=string"
 fi
 
 if [[ -z $(az monitor log-analytics workspace table show --name $tableName --resource-group $resourceGroup --workspace-name $laName 2>/dev/null | jq .id) ]]; then

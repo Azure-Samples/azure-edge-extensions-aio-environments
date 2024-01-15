@@ -26,7 +26,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
     }
   }
   properties: {
-    buildTimeoutInMinutes: 120
+    buildTimeoutInMinutes: 180
     customize: [
       {
         type: 'Shell'
@@ -48,9 +48,32 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       }
       {
         type: 'Shell'
-        name: 'Install Azure CLI'
+        name: 'Install Azure CLI and jq'
         inline: [
           'curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash'
+          'sudo apt-get install -y jq'
+        ]
+      }
+      {
+        type: 'Shell'
+        name: 'New dir'
+        inline: [
+          'sudo mkdir $HOME/hostmem'
+        ]
+      }
+      {
+        type: 'File'
+        name: 'cgroup_mem.sh'
+        sourceUri: 'https://raw.githubusercontent.com/bindsi/arc-footprint/main/scripts/images/cgroup_mem.sh'
+        destination: '/tmp/cgroup_mem.sh'
+      }
+      {
+        type: 'Shell'
+        name: 'Create hostmem collection job'
+        inline: [
+          'sudo chmod +x /tmp/cgroup_mem.sh'
+          'sudo mv /tmp/cgroup_mem.sh $HOME/hostmem'
+          'echo "*/5 * * * * root $HOME/hostmem/cgroup_mem.sh" >> /etc/crontab'
         ]
       }
     ]
