@@ -95,6 +95,14 @@ You need to store the command output in a secret name `CUSTOM_LOCATIONS_OBJECT_I
 
 </details>
 
+## Configuration
+
+The configuration is stored in the [`config.json`](./config.json) file. You can modify the file to change the default values for the image and VM creation.
+
+It currently contains the following properties:
+
+- AKS-EE-version: version for AKS-EE
+
 ## Pre-requisites
 
 ### Azure VM Sizes
@@ -148,6 +156,7 @@ After running the Build-VM (or manually running the Build-Monitoring) pipeline, 
 id=$(az ad signed-in-user show --query id -o tsv)
 az role assignment create --assignee $id --role "Grafana Admin"
 ```
+
 #### Hostmem Usage
 
-To view memory usage per process. Navigate to the Log Analytics workspace and run queries against the ResidentSetSummary_CL table. Note it may take some time for metrics to appear. 
+To view memory usage per process. Navigate to the Log Analytics workspace and run queries against the ResidentSetSummary_CL table. Note it may take some time for metrics to appear.

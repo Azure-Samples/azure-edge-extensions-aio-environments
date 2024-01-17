@@ -18,6 +18,7 @@ param osType string = 'Windows'
 param exists bool = false
 param imgdefExists bool = false
 param identityExists bool = false
+param akseeVersion string = '1.5.203.0'
 
 output azureImageTemplateid string = imageBuilder.outputs.azureImageTemplateid
 
@@ -57,5 +58,6 @@ module imageBuilder 'image-builder.bicep' = {
     osType: osType
     exists: exists
     imgdefExists: imgdefExists
+    akseeVersion: akseeVersion
   }
 }

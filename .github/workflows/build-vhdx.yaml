@@ -87,7 +87,10 @@ jobs:
         if [ -n "$(az identity show -n ${{ inputs.computeGalleryName }}-identity -g $RG --query id -o tsv 2>/dev/null)" ]; then
           echo "Identity ${{ inputs.computeGalleryName }}-identity found in $RG. Use existing..."
           IDENTITY_EXISTS=true
-        fi     
+        fi
+
+        echo "Reading configuration..."
+        AKSEEVERSION=$(jq -r '."AKS-EE-version"' ${GITHUB_WORKSPACE}/config.json)
 
         echo "Running az deployment sub create..."
 
@@ -108,6 +111,7 @@ jobs:
                         vmSize=$VMSIZE \
                         osType=$OSTYPE \
                         imgdefExists=$IMGDEF_EXISTS \
+                        akseeVersion=$AKSEEVERSION \
                         exists=$GALLERY_EXISTS \
                         identityExists=$IDENTITY_EXISTS --query properties.outputs.azureImageTemplateid.value -o tsv)
 

@@ -18,6 +18,7 @@ param vmSize string
 param osType string
 param exists bool
 param imgdefExists bool
+param akseeVersion string
 
 output azureImageTemplateid string = osType == 'Windows' ? imageTemplateWindows.outputs.id : imageTemplateLinux.outputs.id
 
@@ -93,6 +94,7 @@ module imageTemplateWindows 'image-template-windows.bicep' = if(osType == 'Windo
     sku: sku
     version: version
     vmSize: vmSize
+    akseeVersion: akseeVersion
   }
 }
 

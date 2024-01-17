@@ -12,8 +12,7 @@ param offer string
 param sku string
 param version string
 param vmSize string
-
-var akseeVersion = '1.5.203.0'
+param akseeVersion string
 
 output id string = azureImageBuilderTemplate.id
 
