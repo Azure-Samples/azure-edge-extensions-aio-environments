@@ -113,7 +113,7 @@ It installs the corresponding version of [AKS-EE](https://learn.microsoft.com/en
 Just navigate to the GitHub Actions of the repository and select the **Build VHDX** workflow. You can now start a workflow run by clicking on the **Run workflow** button and specifying all parameters and the image configuration.
 If you check the **Create VM from image** checkbox, the workflow will automatically create a VM from image by starting the **Build VM** pipeline.
 
-<img src='images/build-vhdx.png' width='25%' height='25%'>
+<img src='img/build-vhdx.png' width='25%' height='25%'>
 
 ### VM Creation
 
@@ -128,7 +128,7 @@ As mentioned in section [How to create a new image](#how-to-create-a-new-image),
 But you can also start a workflow run manually by submitting the right parameters to point to an existing image. Due to reusability of os disks you can create multiple VMs based on the same image.
 Monitoring resources creation is automatically triggered via separate pipeline, see [Monitoring](#monitoring) section for more details.
 
-<img src='images/build-vm.png' width='25%' height='25%'>
+<img src='img/build-vm.png' width='25%' height='25%'>
 
 ### Monitoring
 
@@ -137,7 +137,7 @@ You can also run the **Build Monitoring** workflow manually to create monitoring
 
 > Note: This pipeline will skip installing the azuremonitor-extension for arc-clusters if the provided cluster is not found
 
-<img src='images/build-monitoring.png' width='25%' height='25%'>
+<img src='img/build-monitoring.png' width='25%' height='25%'>
 
 #### Grafana Dashboard
 
@@ -148,6 +148,7 @@ After running the Build-VM (or manually running the Build-Monitoring) pipeline, 
 id=$(az ad signed-in-user show --query id -o tsv)
 az role assignment create --assignee $id --role "Grafana Admin"
 ```
-#### Hostmem Usage
 
-To view memory usage per process. Navigate to the Log Analytics workspace and run queries against the ResidentSetSummary_CL table. Note it may take some time for metrics to appear. 
+The following is a screengrab of the dashboard available at `Dashboards > Footprint Dashboards > Memory Footprint`:
+
+<img src='img/dashboard.png'>

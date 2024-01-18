@@ -230,6 +230,5 @@ jobs:
     needs: Build-VM
     with:
       clusterName: ${{ needs.Build-VM.outputs.clusterName }}
-      resourceGroupName: ${{ needs.Build-VM.outputs.resourceGroup }}
       vmName: ${{ needs.Build-VM.outputs.vmName }}
     secrets: inherit
