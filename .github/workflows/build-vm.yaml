@@ -211,8 +211,8 @@ jobs:
             --publisher Microsoft.Azure.Extensions \
             --force-update \
             --settings "{\"commandToExecute\": \" \
-                curl -sfL https://get.k3s.io | sh - && \
                 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
+                kubectl delete node \$(kubectl get nodes | grep NotReady | awk '{print \$1}') && \
                 kubectl config use-context default && \
                 kubectl get pods -A -v6 && \
                 decodedSecret=$(echo $encodedBase64Secret | base64 -d) && \

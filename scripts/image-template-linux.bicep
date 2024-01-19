@@ -30,6 +30,15 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
     customize: [
       {
         type: 'Shell'
+        name: 'Install K3s'
+        inline: [
+          'curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.28.5+k3s1 sh -'
+          'mkdir ~/.kube'
+          'sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl config view'
+        ]
+      }
+      {
+        type: 'Shell'
         name: 'Install nfs-common'
         inline: [
           'sudo apt-get update'
