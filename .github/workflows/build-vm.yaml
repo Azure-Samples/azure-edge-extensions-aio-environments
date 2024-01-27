@@ -201,7 +201,7 @@ jobs:
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
                 \$env:KUBECONFIG='C:\\Scripts\\config'; \
                 \$decodedSecret = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('$encodedBase64Secret')); \
-                az iot ops init --no-progress --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\"; \
+                az iot ops init --no-progress --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\" --simulate-plc; \
             \"}"
         else
           az vm extension set \
@@ -221,7 +221,7 @@ jobs:
                 az extension add --name azure-iot-ops && \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
-                az iot ops init --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\" --no-progress \
+                az iot ops init --simulate-plc --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\" --no-progress \
             \"}"
         fi
 
