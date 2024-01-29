@@ -1,3 +1,7 @@
+>Note: This repository has been archived and is no longer maintained. Please use the [Azure Edge Extensions AIO Environments](https://github.com/Azure-Samples/azure-edge-extensions-aio-environments) instead.
+
+----------------------------------------------------------
+
 # Optimization for Arc memory footprintview
 
 This repository sets up the infrastructure to create vhdx images and VMs for the Arc memory footprint investigations.
