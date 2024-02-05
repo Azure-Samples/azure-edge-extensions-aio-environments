@@ -74,8 +74,7 @@ jobs:
 
         echo "Checking if things exist..."
 
-        if [ -n "$(az sig list --query "[?name=='$GALLERY']" -o tsv 2>/dev/null)" ]; then
-          RG=$(az sig list --query "[?name=='$GALLERY'].resourceGroup" -o tsv)
+        if [ -n "$(az sig list --query "[?name=='$GALLERY'&&resourceGroup=='$RG']" -o tsv 2>/dev/null)" ]; then
           echo "Gallery $GALLERY found in $RG. Use existing..."
           GALLERY_EXISTS=true
           if [ -n "$(az sig image-definition list --gallery-name $GALLERY -g $RG --query "[?identifier.offer=='$OFFER'&&identifier.publisher=='$PUBLISHER'&&identifier.sku=='$SKU'].name" -o tsv 2>/dev/null)" ]; then
