@@ -73,7 +73,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       {
         type: 'File'
         name: 'cgroup_mem.sh'
-        sourceUri: 'https://raw.githubusercontent.com/bindsi/arc-footprint/main/scripts/images/cgroup_mem.sh'
+        sourceUri: 'https://raw.githubusercontent.com/Azure-Samples/azure-edge-extensions-aio-environments/main/scripts/images/cgroup_mem.sh'
         destination: '/tmp/cgroup_mem.sh'
       }
       {
