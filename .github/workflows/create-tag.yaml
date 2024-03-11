@@ -2,29 +2,25 @@ name: Create git tag
 on: 
   push:
     branches: 
-      - main
-  
-jobs:
-  Build-Code:
-    permissions:
+	@@ -10,21 +10,21 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v2
       with:
         fetch-depth: 0
     - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v0.11.0
+      uses: gittools/actions/gitversion/setup@v0.9.7
       with:
         versionSpec: '5.x'
     - name: Determine Version
-      uses: gittools/actions/gitversion/execute@v0.11.0
+      uses: gittools/actions/gitversion/execute@v0.9.7
       with:
         useConfigFile: true
     - name: Create git tag
       run: |
-        git tag ${{ env.GitVersion_MajorMinorPatch }}
+        git tag $GITVERSION_MAJORMINORPATCH
       if: github.ref == 'refs/heads/main'
     - name: Push git tag
-      run: git push origin ${{ env.GitVersion_MajorMinorPatch }}
+      run: git push origin $GITVERSION_MAJORMINORPATCH
       if: github.ref == 'refs/heads/main'
