@@ -17,6 +17,7 @@ This infrastructure enables you to install instrumentation tools and collect mem
 
 `az account set --subscription <subscription-id>`
 
+
 ### Setup
 
 Execute the PowerShell script [`./setup.ps1`](./setup.ps1):
