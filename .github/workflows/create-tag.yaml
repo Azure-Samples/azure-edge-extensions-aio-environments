@@ -1,9 +1,8 @@
-name: Main Branch CI
+name: Create git tag
 on: 
   push:
     branches: 
       - main
-  
 jobs:
   Build-Code:
     permissions:
