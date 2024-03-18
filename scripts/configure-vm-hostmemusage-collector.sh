@@ -46,6 +46,54 @@ monitor_resource=$(az resource show --resource-type Microsoft.monitor/accounts -
 vmResource=$(az vm show --name $vmName --resource-group $resourceGroup | jq -c .)
 osType=$(echo $vmResource | jq -r .storageProfile.osDisk.osType)
 ruleName="$vmName-hostmemcollector"
+subscriptionId=$(az account show --query id -o tsv)
+
+agent=AzureMonitor${osType}Agent
+if [[ -z $(az vm extension show --name $agent --vm-name $vmName -g $resourceGroup 2>/dev/null | jq .name) ]]; then
+  echo "Installing AzureMonitor agent extension on $vmName..."
+  az vm extension set --name $agent --publisher Microsoft.Azure.Monitor --vm-name $vmName -g $resourceGroup
+fi
+echo $agent installed.
+
+grafanaName=$(az grafana list --query "[?resourceGroup=='$resourceGroup'].name" -o tsv)
+if [ -z $grafanaName ]; then
+  echo "Error: Grafana resource not found. Please create a Grafana resource first."
+  exit 1
+else
+  echo "Grafana resource ($grafanaName) found. Use existing..."
+fi
+
+hostDashboardName="Memory Footprint - Host"
+if [[ -z $(az grafana dashboard list -n $grafanaName  --query "[?title=='$hostDashboardName']" -o json | jq '.[].id') ]]; then
+  echo "Creating grafana dashboard..."
+  sed -i "s/##SUBSCRIPTION_ID##/$subscriptionId/g" monitoring/mem_by_proc.json
+  sed -i "s/##RESOURCE_GROUP##/$resourceGroup/g" monitoring/mem_by_proc.json
+  if [ $osType == "Linux" ]; then
+    ts_query='CgroupMem_CL\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| summarize Memory=sum(MemoryUsage) by PodName, Namespace, TimeGenerated\\r\\n| project Memory, Workload=strcat(Namespace, \\"/\\", PodName), TimeGenerated\\r\\n| order by TimeGenerated asc\\r\\n'
+    t_query='CgroupMem_CL\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| summarize Memory=avg(MemoryUsage) by PodName, Namespace\\r\\n| project Workload=strcat(Namespace, \\"/\\", PodName), Memory\\r\\n| order by Memory desc \\r\\n'
+    echo "Linux OS detected. Using Linux queries..."
+    echo $ts_query
+    echo $t_query
+    sed -i "s?##TIME_SERIES_QUERY##?$ts_query?g" monitoring/mem_by_proc.json
+    sed -i "s?##TABLE_QUERY##?$t_query?g" monitoring/mem_by_proc.json
+    sed -i "s/##MEM_UNIT##/decbytes/g" monitoring/mem_by_proc.json
+  else
+    echo "Windows OS detected. Using Linux queries..."
+    echo $ts_query
+    echo $t_query
+    ts_query='ResidentSetSummary_CL\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| summarize Memory=sum(SizeMB)*1024 by TraceProcessName, TimeGenerated\\r\\n| order by TimeGenerated asc'
+    t_query='ResidentSetSummary_CL\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| summarize Memory=avg(SizeMB)*1024 by TraceProcessName\\r\\n| order by Memory desc'
+    sed -i "s/##TIME_SERIES_QUERY##/$ts_query/g" monitoring/mem_by_proc.json
+    sed -i "s/##TABLE_QUERY##/$t_query/g" monitoring/mem_by_proc.json
+    sed -i "s/##MEM_UNIT##/deckbytes/g" monitoring/mem_by_proc.json
+  fi
+  az grafana dashboard create \
+    -n $grafanaName \
+    -g $resourceGroup \
+    --title "$hostDashboardName" \
+    --folder "Footprint Dashboards" \
+    --definition $BASEDIR/../monitoring/mem_by_proc.json
+fi
 
 laId=$(az monitor log-analytics workspace show --name $laName -g $resourceGroup 2>/dev/null | jq -r .id)
 if [ -z $laId ]; then
