@@ -1,4 +1,4 @@
-# Optimization for Arc memory footprintview
+# Optimization for Arc memory footprint
 
 This repository sets up the infrastructure to create vhdx images and VMs for the Arc memory footprint investigations.
 Because of the nature of efficiency, customers demand a low memory footprint to save costs in terms of hardware and devices.
@@ -149,6 +149,10 @@ id=$(az ad signed-in-user show --query id -o tsv)
 az role assignment create --assignee $id --role "Grafana Admin"
 ```
 
-The following is a screengrab of the dashboard available at `Dashboards > Footprint Dashboards > Memory Footprint`:
+Two dashboards are available in the `Footprint Dashboards` folder:
 
-<img src='img/dashboard.png'>
+- *Memory Footprint - Cluster*: This dashboard shows the memory usage of the cluster including AIO and Arc resources.
+<img src='img/dashboard-cluster.png'>
+
+- *Memory Footprint - Host*: This dashboard shows the memory usage of the VM (host) processes.
+<img src='img/dashboard-host.png'>

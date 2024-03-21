@@ -25,7 +25,7 @@ jobs:
       resourceGroup: rg-${{ inputs.vmName }}
       clusterName: ${{ inputs.clusterName }}
       vmName: ${{ inputs.vmName }}
-      grafanaDashboardName: footprint-${{github.run_id}}
+      grafanaName: footprint-${{github.run_id}}
       monitorName: footprint
       logAnalytics: la-footprint
     steps:
@@ -44,6 +44,6 @@ jobs:
         az provider register --namespace Microsoft.AlertsManagement --wait
         az extension add --name amg
     - name: Create Azure Monitor and Grafana resources
-      run: bash ${GITHUB_WORKSPACE}/scripts/configure-azmon-grafana.sh -v $vmName -g $resourceGroup -m $monitorName -d $grafanaDashboardName -c $clusterName
+      run: bash ${GITHUB_WORKSPACE}/scripts/configure-azmon-grafana.sh -v $vmName -g $resourceGroup -m $monitorName -d $grafanaName -c $clusterName
     - name: Configure hostmemusage collection
       run: bash ${GITHUB_WORKSPACE}/scripts/configure-vm-hostmemusage-collector.sh -g $resourceGroup -v $vmName -l $logAnalytics -m $monitorName

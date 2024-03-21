@@ -62,7 +62,7 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 20,
-            "w": 12,
+            "w": 24,
             "x": 0,
             "y": 1
           },
@@ -136,107 +136,7 @@
           "yaxis": {
             "align": false
           }
-        },
-        {
-          "datasource": {
-            "type": "grafana-azure-monitor-datasource",
-            "uid": "azure-monitor-oob"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 100,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 1,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "normal"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "##MEM_UNIT##"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 20,
-            "w": 12,
-            "x": 12,
-            "y": 1
-          },
-          "id": 18,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "pluginVersion": "9.5.13",
-          "targets": [
-            {
-              "azureLogAnalytics": {
-                "query": "##TIME_SERIES_QUERY##",
-                "resources": [
-                  "/subscriptions/##SUBSCRIPTION_ID##/resourceGroups/##RESOURCE_GROUP##/providers/Microsoft.OperationalInsights/workspaces/la-footprint"
-                ],
-                "resultFormat": "time_series"
-              },
-              "datasource": {
-                "type": "grafana-azure-monitor-datasource",
-                "uid": "azure-monitor-oob"
-              },
-              "queryType": "Azure Log Analytics",
-              "refId": "A",
-              "subscription": "##SUBSCRIPTION_ID##"
-            }
-          ],
-          "title": "Host Memory Collection (stacked)",
-          "type": "timeseries"
-        },
-        
+        },        
         {
           "aliasColors": {},
           "bars": false,
@@ -251,7 +151,7 @@
           "fontSize": "100%",
           "gridPos": {
             "h": 33,
-            "w": 17,
+            "w": 24,
             "x": 0,
             "y": 21
           },
@@ -523,82 +423,6 @@
               "show": false
             }
           ]
-        },
-        {
-          "datasource": {
-            "type": "grafana-azure-monitor-datasource",
-            "uid": "azure-monitor-oob"
-          },
-          "description": "Average memory usage for given time range",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "custom": {
-                "align": "auto",
-                "cellOptions": {
-                  "type": "auto"
-                },
-                "inspect": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "##MEM_UNIT##"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 33,
-            "w": 7,
-            "x": 17,
-            "y": 21
-          },
-          "id": 19,
-          "options": {
-            "cellHeight": "sm",
-            "footer": {
-              "countRows": false,
-              "fields": "",
-              "reducer": [
-                "sum"
-              ],
-              "show": false
-            },
-            "showHeader": true
-          },
-          "pluginVersion": "9.5.13",
-          "targets": [
-            {
-              "azureLogAnalytics": {
-                "query": "##TABLE_QUERY##",
-                "resources": [
-                  "/subscriptions/##SUBSCRIPTION_ID##/resourceGroups/##RESOURCE_GROUP##/providers/Microsoft.OperationalInsights/workspaces/la-footprint"
-                ],
-                "resultFormat": "table"
-              },
-              "datasource": {
-                "type": "grafana-azure-monitor-datasource",
-                "uid": "azure-monitor-oob"
-              },
-              "queryType": "Azure Log Analytics",
-              "refId": "A"
-            }
-          ],
-          "title": "Average Host Memory Usage",
-          "type": "table"
         }
       ],
       "refresh": "1m",
