@@ -6,17 +6,15 @@ Usage(){
   echo "Description:"
   echo "  Creates Azure Monitor and Grafana resources to house metrics and dashboards"
   echo "Options:"
-  echo "  -v| Azure VM name (required)"
   echo "  -g| Azure resource group (required)"
   echo "  -m| Azure monitor resource name (default: footprint)"
   echo "  -d| Grafana dashboard resource name. Must be globally unique (default: footprint-<random4char>)"
   echo "  -c| Azure Arc resource name. Skips extension install for connected cluster if not provided."
+  echo "  -r| The resource group name of the Azure Arc cluster. (default: same as Azure resource group)."
 }
 
-while getopts ":v:g:m:d:c:" opt; do
+while getopts ":g:m:d:c:r:" opt; do
   case $opt in
-    v) vmName=$OPTARG
-    ;;
     g) resourceGroup=$OPTARG
     ;;
     m) monitorName=$OPTARG
@@ -24,6 +22,8 @@ while getopts ":v:g:m:d:c:" opt; do
     d) grafanaName=$OPTARG
     ;;
     c) clusterName=$OPTARG
+    ;;
+    r) clusterResourceGroup=$OPTARG
     ;;
     \?) echo "Invalid option -$OPTARG" >&2
     exit 1
@@ -37,7 +37,7 @@ while getopts ":v:g:m:d:c:" opt; do
   esac
 done
 
-if [[ $OPTIND -eq 1 || -z $vmName ]]; then
+if [[ $OPTIND -eq 1 ]]; then
   Usage
   exit 1
 fi
@@ -45,6 +45,7 @@ fi
 randoStr=$(tr -dc a-z0-9 </dev/urandom | head -c 4; echo)
 grafanaName=${grafanaName:-footprint-$randoStr}
 monitorName="${monitorName:-footprint}"
+clusterResourceGroup=${clusterResourceGroup:-$resourceGroup}
 
 BASEDIR=$(dirname $0)
 
@@ -59,7 +60,6 @@ fi
 location=$(az group show -n $resourceGroup --query location -o tsv)
 subscriptionId=$(az account show --query id -o tsv)
 monitor_resource=$(az resource show --resource-type Microsoft.monitor/accounts --name $monitorName --resource-group $resourceGroup 2>/dev/null | jq -c .)
-osType=$(az vm show --name $vmName --resource-group $resourceGroup --query 'storageProfile.osDisk.osType' -o tsv)
 
 if [ -z $monitor_resource ]; then
   echo "Creating new Azure Monitor workspace..."
@@ -79,7 +79,7 @@ fi
 
 grafanaIdentity=$(echo $grafana | jq -r '.identity.principalId')
 echo "Grafana identity: $grafanaIdentity"
-az role assignment create --assignee $grafanaIdentity --role "Monitoring Data Reader" --scope /subscriptions/$subscriptionId
+az role assignment create --assignee $grafanaIdentity --role "Monitoring Data Reader" --scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroup
 
 if [[ -z $(az grafana data-source show -n $grafanaName --data-source "Azure Managed Prometheus-1" 2>/dev/null | jq .name) ]]; then
   echo "Adding prometheus data source to Grafana..."
@@ -110,15 +110,15 @@ if [[ -z $(az grafana dashboard list -n $grafanaName  --query "[?title=='$cluste
     --definition $BASEDIR/../monitoring/mem_by_ns.json
 fi
 
-if [[ -z $clusterName || -z $(az connectedk8s show -n $clusterName -g $resourceGroup 2>/dev/null | jq .name) ]]; then
+if [[ -z $clusterName || -z $(az connectedk8s show -n $clusterName -g $clusterResourceGroup 2>/dev/null | jq .name) ]]; then
   echo "Arc connected cluster not provided or not found. Skipping azmon-extension create."
 else
   echo "Creating k8s-extension azuremonitor-metrics..."
   workspaceId=$(echo $monitor_resource | jq -r .id)
-  if [[ -z $( az k8s-extension show --resource-group $resourceGroup --cluster-name $clusterName --cluster-type connectedClusters --name azuremonitor-metrics 2>/dev/null | jq .name) ]]; then
+  if [[ -z $( az k8s-extension show --resource-group $clusterResourceGroup --cluster-name $clusterName --cluster-type connectedClusters --name azuremonitor-metrics 2>/dev/null | jq .name) ]]; then
     az k8s-extension create --name azuremonitor-metrics \
       --cluster-name $clusterName \
-      --resource-group $resourceGroup \
+      --resource-group $clusterResourceGroup \
       --cluster-type connectedClusters \
       --extension-type Microsoft.AzureMonitor.Containers.Metrics \
       --configuration-settings azure-monitor-workspace-resource-id=$workspaceId
