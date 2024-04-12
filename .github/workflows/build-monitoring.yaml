@@ -46,4 +46,4 @@ jobs:
     - name: Create Azure Monitor and Grafana resources
       run: bash ${GITHUB_WORKSPACE}/scripts/configure-azmon-grafana.sh -v $vmName -g $resourceGroup -m $monitorName -d $grafanaName -c $clusterName
     - name: Configure hostmemusage collection
-      run: bash ${GITHUB_WORKSPACE}/scripts/configure-vm-hostmemusage-collector.sh -g $resourceGroup -v $vmName -l $logAnalytics -m $monitorName
+      run: bash ${GITHUB_WORKSPACE}/scripts/configure-vm-hostmemusage-collector.sh -g $resourceGroup -l $logAnalytics -m $monitorName
