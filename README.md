@@ -1,8 +1,7 @@
-# Optimization for Arc memory footprint
+# Pre-Built Azure IoT Operations Environments
 
-This repository sets up the infrastructure to create vhdx images and VMs for the Arc memory footprint investigations.
-Because of the nature of efficiency, customers demand a low memory footprint to save costs in terms of hardware and devices.
-This infrastructure enables you to install instrumentation tools and collect memory dumps components.
+This repository sets up the infrastructure to create vhdx images and VMs for Azure IoT Operations on Arc-enabled servers.
+This infrastructure enables you to install instrumentation tools and collect memory dumps for applications and core components.
 
 ## Getting Started
 
