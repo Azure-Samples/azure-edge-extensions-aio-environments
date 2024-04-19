@@ -202,7 +202,6 @@ jobs:
                 \$env:KUBECONFIG='C:\\Scripts\\config'; \
                 \$decodedSecret = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('$encodedBase64Secret')); \
                 az iot ops init --simulate-plc --no-progress --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\"; \
-                az k8s-extension update --yes --version 0.3.0-preview --name opc-ua-broker --release-train preview --cluster-name $clusterName --resource-group $resourceGroup --cluster-type connectedClusters --auto-upgrade-minor-version false --config \"\"opcPlcSimulation.deploy=true\"\" --config \"\"opcPlcSimulation.autoAcceptUntrustedCertificates=true\"\"; \
             \"}"
         else
           az vm extension set \
