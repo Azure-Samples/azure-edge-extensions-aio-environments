@@ -194,7 +194,7 @@ jobs:
             --settings "{\"commandToExecute\":\"powershell q -Confirm:\$false; \
                 kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
                 az login --identity; \
-                az extension add --name connectedk8s --version 1.6.0; \
+                az extension add --name connectedk8s; \
                 az extension add --name azure-iot-ops; \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
                 Remove-Item -LiteralPath C:\\Windows\\System32\\config\\systemprofile\\.azure\\AzureArcCharts -Recurse -Force; \
@@ -202,6 +202,7 @@ jobs:
                 \$env:KUBECONFIG='C:\\Scripts\\config'; \
                 \$decodedSecret = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('$encodedBase64Secret')); \
                 az iot ops init --simulate-plc --no-progress --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\"; \
+                az k8s-extension update --version 0.3.0-preview --name opc-ua-broker --release-train preview --cluster-name $clusterName --resource-group $resourceGroup --cluster-type connectedClusters --auto-upgrade-minor-version false --config opcPlcSimulation.deploy=true --config opcPlcSimulation.autoAcceptUntrustedCertificates=true; \
             \"}"
         else
           az vm extension set \
@@ -217,11 +218,12 @@ jobs:
                 kubectl get pods -A -v6 && \
                 decodedSecret=\$(echo $encodedBase64Secret | base64 -d) && \
                 az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"\$decodedSecret\"\" --tenant $tenantId && \
-                az extension add --name connectedk8s --version 1.6.0 && \
+                az extension add --name connectedk8s && \
                 az extension add --name azure-iot-ops && \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
                 az iot ops init --simulate-plc --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\" --no-progress \
+                az k8s-extension update --version 0.3.0-preview --name opc-ua-broker --release-train preview --cluster-name $clusterName --resource-group $resourceGroup --cluster-type connectedClusters --auto-upgrade-minor-version false --config opcPlcSimulation.deploy=true --config opcPlcSimulation.autoAcceptUntrustedCertificates=true \
             \"}"
         fi
 
