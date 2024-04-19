@@ -69,10 +69,12 @@ else
   echo "Grafana resource ($grafanaName) found. Use existing..."
 fi
 
-hostDashboardName="Memory Footprint - Host"
 allDashboardName="Memory Footprint"
+hostDashboardName="Memory Footprint - Host"
 echo "Creating grafana dashboard..."
+sed -i "s/##SUBSCRIPTION_ID##/$subscriptionId/g" monitoring/mem_by_all.json
 sed -i "s/##SUBSCRIPTION_ID##/$subscriptionId/g" monitoring/mem_by_proc.json
+sed -i "s/##RESOURCE_GROUP##/$resourceGroup/g" monitoring/mem_by_all.json
 sed -i "s/##RESOURCE_GROUP##/$resourceGroup/g" monitoring/mem_by_proc.json
 if [ $osType == "Linux" ]; then
   ts_query='CgroupMem_CL\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| summarize Memory=sum(MemoryUsage) by PodName, Namespace, TimeGenerated\\r\\n| project Memory, Workload=strcat(Namespace, \\"/\\", PodName), TimeGenerated\\r\\n| order by TimeGenerated asc\\r\\n'
