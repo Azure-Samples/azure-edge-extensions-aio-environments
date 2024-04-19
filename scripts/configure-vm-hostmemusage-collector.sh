@@ -68,6 +68,7 @@ if [ -z $grafanaName ]; then
 else
   echo "Grafana resource ($grafanaName) found. Use existing..."
 fi
+
 allDashboardName="Memory Footprint"
 hostDashboardName="Memory Footprint - Host"
 echo "Creating grafana dashboard..."
@@ -81,20 +82,25 @@ if [ $osType == "Linux" ]; then
   echo "Linux OS detected. Using Linux queries..."
   echo $ts_query
   echo $t_query
+  sed -i "s?##TIME_SERIES_QUERY##?$ts_query?g" monitoring/mem_by_all.json
+  sed -i "s?##TABLE_QUERY##?$t_query?g" monitoring/mem_by_all.json
+  sed -i "s/##MEM_UNIT##/decbytes/g" monitoring/mem_by_all.json
+  sed -i "s?##TIME_SERIES_QUERY##?$ts_query?g" monitoring/mem_by_proc.json
+  sed -i "s?##TABLE_QUERY##?$t_query?g" monitoring/mem_by_proc.json
+  sed -i "s/##MEM_UNIT##/decbytes/g" monitoring/mem_by_proc.json
 else
   echo "Windows OS detected. Using Linux queries..."
   echo $ts_query
   echo $t_query
   ts_query='ResidentSetSummary_CL\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| summarize Memory=sum(SizeMB)*1024 by TraceProcessName, TimeGenerated\\r\\n| order by TimeGenerated asc'
   t_query='ResidentSetSummary_CL\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| summarize Memory=avg(SizeMB)*1024 by TraceProcessName\\r\\n| order by Memory desc'
-fi
   sed -i "s/##TIME_SERIES_QUERY##/$ts_query/g" monitoring/mem_by_all.json
   sed -i "s/##TABLE_QUERY##/$t_query/g" monitoring/mem_by_all.json
   sed -i "s/##MEM_UNIT##/deckbytes/g" monitoring/mem_by_all.json
   sed -i "s/##TIME_SERIES_QUERY##/$ts_query/g" monitoring/mem_by_proc.json
   sed -i "s/##TABLE_QUERY##/$t_query/g" monitoring/mem_by_proc.json
   sed -i "s/##MEM_UNIT##/deckbytes/g" monitoring/mem_by_proc.json
-
+fi
 if [[ -z $(az grafana dashboard list -n $grafanaName --query "[?title=='$hostDashboardName']" -o json | jq '.[].id') ]]; then
   az grafana dashboard create \
     -n $grafanaName \
