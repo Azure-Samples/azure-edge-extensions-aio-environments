@@ -44,8 +44,8 @@ jobs:
       run: |
         echo "Running az deployment group create..."
 
-        hciRpSpObjectId="$(az ad sp list --display-name "Microsoft.AzureStackHCI Resource Provider" | jq -r '.[0].id')""
-        tenantId=$(az account show --query tenantId -o tsv)
+        hciRpSpObjectId="$(az ad sp list --display-name "Microsoft.AzureStackHCI Resource Provider" | jq -r '.[0].id')"
+        tenantId="$(az account show --query tenantId -o tsv)"
         az group create --name ${{ inputs.resourceGroupName }} --location ${{ inputs.location }}
 
         az deployment group create \
