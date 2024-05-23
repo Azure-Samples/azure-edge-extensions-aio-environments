@@ -1,0 +1,63 @@
+name: Build VHDX
+on: 
+  workflow_dispatch:
+    inputs:
+      location:
+        description: 'Azure Resource Location'
+        required: true
+        default: 'eastus'
+        type: choice
+        options:
+        - eastus
+        - eastus2
+        - westus
+        - westeurope
+      resourceGroupName:
+        description: 'Azure Resource Group'
+        type: string
+        default: rg-arc-footprint-hci
+        required: true
+      createCluster:
+        description: 'Create Cluster on HCI'
+        type: boolean
+        default: false
+        required: true
+jobs:
+  Build-HCI:
+    runs-on: ubuntu-latest
+    env:
+      logAnalyticsName: "laarcfootprinthci"
+    outputs:
+      configurationName: ${{ steps.createImage.outputs.configurationName }}
+      vmSize: ${{ steps.createImage.outputs.vmSize }}
+      imageVersion: ${{ steps.createImage.outputs.imageVersion }}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Log in with Azure
+      uses: azure/login@v1
+      with:
+        creds: '{"clientId":"${{ secrets.AZURE_SP_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_SP_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+    - name: Run az deployment for image creation
+      id: createImage
+      run: |
+        echo "Running az deployment group create..."
+
+        hciRpSpObjectId="$(az ad sp list --display-name "Microsoft.AzureStackHCI Resource Provider" | jq -r '.[0].id')""
+        tenantId=$(az account show --query tenantId -o tsv)
+        az group create --name ${{ inputs.resourceGroupName }} --location ${{ inputs.location }}
+
+        az deployment group create \
+          --name fpdeployment${{github.run_id}} \
+          --template-file $GITHUB_WORKSPACE/azure_jumpstart_hcibox/bicep/main.bicep \
+          --parameters spnClientId=${{ secrets.AZURE_SP_CLIENT_ID }} \
+                        spnClientSecret=${{ secrets.AZURE_SP_CLIENT_SECRET }} \
+                        spnTenantId=$tenantId \
+                        spnProviderId=$hciRpSpObjectId \
+                        windowsAdminUsername=${{ secrets.VMADMINUSERNAME }} \
+                        windowsAdminPassword=${{ secrets.VMADMINPASSWORD }} \
+                        logAnalyticsWorkspaceName=$logAnalyticsName \
+                        deployBastion=false \
+                        autoDeployClusterResource=${{ inputs.createCluster }} \
+                        autoUpgradeClusterResource=false

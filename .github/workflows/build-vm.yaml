@@ -155,7 +155,11 @@ jobs:
           --admin-username $adminUsername \
           --admin-password $adminPassword \
           --assign-identity $identity
-    
+
+    - name: Install HCI Box
+      run: |
+        hciRPObjectId="$(az ad sp list --display-name "Microsoft.AzureStackHCI Resource Provider" | jq -r '.[].id')"
+        
     - name: Install provider extensions
       run: |
         az provider register -n "Microsoft.ExtendedLocation"
