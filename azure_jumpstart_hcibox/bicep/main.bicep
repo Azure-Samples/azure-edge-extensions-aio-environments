@@ -36,7 +36,7 @@ param githubBranch string = 'main'
 param deployBastion bool = false
 
 @description('Location to deploy resources')
-param location string = deployment().location
+param location string = resourceGroup().location
 
 @description('Override default RDP port using this parameter. Default is 3389. No changes will be made to the client VM.')
 param rdpPort string = '3389'
