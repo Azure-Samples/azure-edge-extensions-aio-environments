@@ -50,6 +50,7 @@ jobs:
 
         az deployment group create \
           --name fpdeployment${{github.run_id}} \
+          --resource-group ${{ inputs.resourceGroupName }} \
           --template-file $GITHUB_WORKSPACE/azure_jumpstart_hcibox/bicep/main.bicep \
           --parameters spnClientId=${{ secrets.AZURE_SP_CLIENT_ID }} \
                         spnClientSecret=${{ secrets.AZURE_SP_CLIENT_SECRET }} \
