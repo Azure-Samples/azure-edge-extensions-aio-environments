@@ -44,8 +44,8 @@ jobs:
       run: |
         echo "Running az deployment group create..."
 
-        hciRpSpObjectId="$(az ad sp list --display-name "Microsoft.AzureStackHCI Resource Provider" | jq -r '.[0].id')"
         tenantId="$(az account show --query tenantId -o tsv)"
+        echo "tenantId: $tenantId"
         az group create --name ${{ inputs.resourceGroupName }} --location ${{ inputs.location }}
 
         az deployment group create \
@@ -55,7 +55,7 @@ jobs:
           --parameters spnClientId=${{ secrets.AZURE_SP_CLIENT_ID }} \
                         spnClientSecret=${{ secrets.AZURE_SP_CLIENT_SECRET }} \
                         spnTenantId=$tenantId \
-                        spnProviderId=$hciRpSpObjectId \
+                        spnProviderId=${{ secrets.AZURE_STACK_HCI_OBJECT_ID }} \
                         windowsAdminUsername=${{ secrets.VMADMINUSERNAME }} \
                         windowsAdminPassword=${{ secrets.VMADMINPASSWORD }} \
                         logAnalyticsWorkspaceName=$logAnalyticsName \
