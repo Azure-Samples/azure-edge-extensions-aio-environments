@@ -191,7 +191,7 @@ jobs:
             --name CustomScriptExtension \
             --publisher Microsoft.Compute \
             --force-update \
-            --settings "{\"commandToExecute\":\"powershell q -Confirm:\$false; \
+            --settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \
                 kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
                 az login --identity; \
                 az extension add --name connectedk8s; \
