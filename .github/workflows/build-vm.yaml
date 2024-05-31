@@ -176,7 +176,7 @@ jobs:
         principalId=$(az identity show --name $vmIdentityName -g $resourceGroup --query principalId -o tsv)
 
         echo "Creating keyvault..."
-        kvId=$(az keyvault create -n $kvName -g $resourceGroup -o tsv --no-self-perms --query id -o tsv)
+        kvId=$(az keyvault create --enable-rbac-authorization false -n $kvName -g $resourceGroup -o tsv --no-self-perms --query id -o tsv)
         az keyvault set-policy -n $kvName -g $resourceGroup --object-id ${{ secrets.AZURE_SP_OBJECT_ID }} --secret-permissions all --key-permissions all --storage-permissions all --certificate-permissions all
         az keyvault set-policy -n $kvName -g $resourceGroup --object-id $principalId --secret-permissions all --key-permissions all --storage-permissions all --certificate-permissions all
         
