@@ -2,14 +2,21 @@ name: Build Monitoring
 on:
   workflow_call:
     inputs:
+      resourceGroupName:
+        required: true
+        type: string
       clusterName:
-          required: true
-          type: string
+        required: true
+        type: string
       vmName:
-          required: true
-          type: string
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
+      resourceGroupName:
+        description: 'Azure Resource Group'
+        required: true
+        type: string
       clusterName:
         description: 'Azure Arc Cluster Name'
         required: true
@@ -22,7 +29,7 @@ jobs:
   Build-Monitoring:
     runs-on: ubuntu-latest
     env:
-      resourceGroup: rg-${{ inputs.vmName }}
+      resourceGroup: ${{ inputs.resourceGroupName }}
       clusterName: ${{ inputs.clusterName }}
       vmName: ${{ inputs.vmName }}
       grafanaName: footprint-${{github.run_id}}

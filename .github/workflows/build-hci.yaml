@@ -17,8 +17,8 @@ on:
         type: string
         default: rg-arc-footprint-hci
         required: true
-      createCluster:
-        description: 'Create Cluster on HCI'
+      createMonitoring:
+        description: 'Create Monitoring Resources'
         type: boolean
         default: false
         required: true
@@ -26,6 +26,7 @@ jobs:
   Build-HCI:
     runs-on: ubuntu-latest
     env:
+      vmName: HCIBox-Client
       registerCluster: true
       deployAKSHCI: true
       deployResourceBridge: true
@@ -33,11 +34,10 @@ jobs:
       rdpPort: 3389
       autoDeployClusterResource: true
       autoUpgradeClusterResource: true
-      templateBaseUrl: 'https://raw.githubusercontent.com/bindsi/azure-edge-extensions-aio-environments/main/azure_jumpstart_hcibox/'
+      templateBaseUrl: 'https://raw.githubusercontent.com/bindsi/azure-edge-extensions-aio-environments/feature/automatedAzureStackHCI/azure_jumpstart_hcibox/'
     outputs:
-      configurationName: ${{ steps.createImage.outputs.configurationName }}
-      vmSize: ${{ steps.createImage.outputs.vmSize }}
-      imageVersion: ${{ steps.createImage.outputs.imageVersion }}
+      clusterName: hcibox-aks
+      vmName: ${{ env.vmName }}
     steps:
     - uses: actions/checkout@v2
       with:
@@ -71,7 +71,6 @@ jobs:
                         deployBastion=false \
                         autoDeployClusterResource=${{ inputs.createCluster }} \
                         autoUpgradeClusterResource=false --query properties.outputs.storageAccountName.value -o tsv)
-        # stagingStorageAccountName="hciboxgeo2vvwttiqdw"
 
         echo "Restarting VM..."
         az vm restart -g ${{ inputs.resourceGroupName }} -n HCIBox-Client
@@ -79,9 +78,19 @@ jobs:
         echo "Bootstrapping..."
         az vm extension set \
         --resource-group ${{ inputs.resourceGroupName }} \
-        --vm-name HCIBox-Client \
+        --vm-name ${{ env.vmName }} \
         --name CustomScriptExtension \
         --publisher Microsoft.Compute \
         --force-update \
-        --settings "{\"fileUris\": [\"$templateBaseUrl/artifacts/PowerShell/Bootstrap.ps1\"], \"commandToExecute\":\"powershell.exe -ExecutionPolicy Bypass -File Bootstrap.ps1 -adminUsername ${{ secrets.VMADMINUSERNAME }} -adminPassword ${{ secrets.VMADMINPASSWORD }} -spnClientId ${{ secrets.AZURE_SP_CLIENT_ID }} -spnClientSecret ${{ secrets.AZURE_SP_CLIENT_SECRET }} -spnTenantId $tenantId -subscriptionId $subscriptionId -spnProviderId ${{ secrets.AZURE_STACK_HCI_OBJECT_ID }} -resourceGroup ${{ inputs.resourceGroupName }} -azureLocation ${{ inputs.location }} -stagingStorageAccountName $stagingStorageAccountName -workspaceName $logAnalyticsName -templateBaseUrl $templateBaseUrl -registerCluster ${{ env.registerCluster }} -deployAKSHCI ${{ env.deployAKSHCI }} -deployResourceBridge ${{ env.deployResourceBridge }} -natDNS ${{ env.natDNS }} -rdpPort ${{ env.rdpPort }} -autoDeployClusterResource ${{ env.autoDeployClusterResource }} -autoUpgradeClusterResource ${{ env.autoUpgradeClusterResource }} -groupObjectID ${{ secrets.HCI_AKS_GROUP_OBJECT_ID }} \
+        --protected-settings "{\"fileUris\": [\"$templateBaseUrl/artifacts/PowerShell/Bootstrap.ps1\"], \"commandToExecute\":\"powershell.exe -ExecutionPolicy Bypass -File Bootstrap.ps1 -adminUsername ${{ secrets.VMADMINUSERNAME }} -adminPassword ${{ secrets.VMADMINPASSWORD }} -spnClientId ${{ secrets.AZURE_SP_CLIENT_ID }} -spnObjectId ${{ secrets.AZURE_SP_OBJECT_ID }} -spnClientSecret ${{ secrets.AZURE_SP_CLIENT_SECRET }} -spnTenantId $tenantId -subscriptionId $subscriptionId -spnProviderId ${{ secrets.AZURE_STACK_HCI_OBJECT_ID }} -resourceGroup ${{ inputs.resourceGroupName }} -azureLocation ${{ inputs.location }} -stagingStorageAccountName $stagingStorageAccountName -workspaceName $logAnalyticsName -templateBaseUrl $templateBaseUrl -registerCluster ${{ env.registerCluster }} -deployAKSHCI ${{ env.deployAKSHCI }} -deployResourceBridge ${{ env.deployResourceBridge }} -natDNS ${{ env.natDNS }} -rdpPort ${{ env.rdpPort }} -autoDeployClusterResource ${{ env.autoDeployClusterResource }} -autoUpgradeClusterResource ${{ env.autoUpgradeClusterResource }} -groupObjectID ${{ secrets.HCI_AKS_GROUP_OBJECT_ID }} \
         \"}"
+
+  Build-Monitoring:
+      if: ${{ inputs.createMonitoring }}
+      uses: ./.github/workflows/build-monitoring.yaml
+      needs: Build-HCI
+      with:
+        clusterName: ${{ needs.Build-HCI.outputs.clusterName }}
+        vmName: ${{ needs.Build-HCI.outputs.vmName }}
+        resourceGroupName: ${{ inputs.resourceGroupName }}
+      secrets: inherit

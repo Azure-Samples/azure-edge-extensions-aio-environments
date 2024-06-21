@@ -12,7 +12,7 @@ This infrastructure enables you to install instrumentation tools and collect mem
 3. An Azure subscription
 4. Fork this repository and run
 
-`az login --tenant <tenant-id>`
+`az login --tenant <tenant-id>`--scope https://graph.microsoft.com//.default
 
 `az account set --subscription <subscription-id>`
 
@@ -21,10 +21,13 @@ This infrastructure enables you to install instrumentation tools and collect mem
 Execute the PowerShell script [`./setup.ps1`](./setup.ps1):
 
 ```powershell
-./setup.ps1 -ForkedRepo <owner/forked-repo-name> -SubscriptionId <subid> -ServicePrincipalName <name-for-new-sp> -VmAdminUsername <vm-usrname>
+./setup.ps1 -ForkedRepo <owner/forked-repo-name> -SubscriptionId <subid> -ServicePrincipalName <name-for-new-sp> - HciAksGroupName <hci-aks-groupname> -VmAdminUsername <vm-usrname> -VmAdminPassword <vm-usrpassword>
+```
+
+```sh
 
 # or 
-./setup.ps1 <owner/forked-repo-name> <subid> <name-for-new-sp> <vm-usrname>
+./setup.ps1 <owner/forked-repo-name> <subid> <name-for-new-sp> <hci-aks-groupname> <vm-usrname> <vm-usrpassword>
 ```
 
 to create the required Service Principal, Role Assignments and GitHub Secrets.
@@ -33,6 +36,7 @@ You have to provide the following parameters to the script:
 
 - Azure Subscription Id
 - Service Principal Name
+- Entra Id Group Name for AKS HCI Cluster
 - VM Admin Username (for the VMs created based on the images)
 - VM Admin Password (for the VMs created based on the images)
 
@@ -76,7 +80,9 @@ GitHub secrets that are required for the workflows to run:
 | AZURE_SP_CLIENT_ID | client id from az ad sp create-for-rbac command |
 | AZURE_SP_CLIENT_SECRET | client secret from az ad sp create-for-rbac command |
 | AZURE_SP_OBJECT_ID | object id from az ad sp create-for-rbac command |
+| AZURE_STACK_HCI_OBJECT_ID | object id of the 'Microsoft.AzureStackHCI Resource Provider' app registration |
 | CUSTOM_LOCATIONS_OBJECT_ID | object id of the contributor SP (see below) |
+| HCI_AKS_GROUP_OBJECT_ID | object id of the group required for the AKS HCI Workload cluster |
 | VMADMINPASSWORD | admin username for the VM |
 | VMADMINUSERNAME | admin password for the VM |
 
