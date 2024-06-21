@@ -119,7 +119,7 @@ Since nested virtualization is required to install AKS-EE on Windows, you need t
 
 This repo also supports the creation of an [Azure Stack HCI](https://learn.microsoft.com/en-us/azure-stack/hci/overview) environment.
 It utilizes the [Azure Arc Jumpstart HCIBox](https://arcjumpstart.com/azure_jumpstart_hcibox) resources to create an AKS HCI cluster on Azure Stack HCI and is fully automated by the GitHub Actions workflows.
-To start the deployment of AKS HCI cluster on Azure Stack HCI which installs Azure IoT Operations on top of, you need to run the **Build HCI** pipeline.
+To start the deployment of an Azure Stack HCI sandbox which installs Azure IoT Operations on top of it, you need to run the **Build HCI** pipeline.
 Additionally, you can also run the **Build Monitoring** pipeline to create monitoring resources for the AKS HCI cluster by enabling the **Start 'Build Monitoring' Workflow** checkbox.
 
 <img src='img/build-hci.png' width='25%' height='25%'>
