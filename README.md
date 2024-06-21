@@ -5,6 +5,13 @@ This infrastructure enables you to install instrumentation tools and collect mem
 
 ## Getting Started
 
+### Supported Operating Systems
+
+- Windows Server
+- Windows IoT Enterprise
+- Linux Ubuntu
+- Azure Stack HCI
+
 ### Prerequisites
 
 1. Install [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
@@ -107,6 +114,15 @@ You need to store the command output in a secret name `CUSTOM_LOCATIONS_OBJECT_I
 Since nested virtualization is required to install AKS-EE on Windows, you need to select a VM size that supports this feature, such as Dv5 or Dsv5 series. For more information, you can refer to [hardware requirements](https://learn.microsoft.com/en-us/azure/aks/hybrid/aks-edge-system-requirements#hardware-requirements).
 
 ## Workflows
+
+### Azure Stack HCI
+
+This repo also supports the creation of an [Azure Stack HCI](https://learn.microsoft.com/en-us/azure-stack/hci/overview) environment.
+It utilizes the [Azure Arc Jumpstart HCIBox](https://arcjumpstart.com/azure_jumpstart_hcibox) resources to create an AKS HCI cluster on Azure Stack HCI and is fully automated by the GitHub Actions workflows.
+To start the deployment of AKS HCI cluster on Azure Stack HCI which installs Azure IoT Operations on top of, you need to run the **Build HCI** pipeline.
+Additionally, you can also run the **Build Monitoring** pipeline to create monitoring resources for the AKS HCI cluster by enabling the **Start 'Build Monitoring' Workflow** checkbox.
+
+<img src='img/build-hci.png' width='25%' height='25%'>
 
 ### Image Creation
 
