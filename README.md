@@ -122,6 +122,8 @@ It utilizes the [Azure Arc Jumpstart HCIBox](https://arcjumpstart.com/azure_jump
 To start the deployment of an Azure Stack HCI sandbox which installs Azure IoT Operations on top of it, you need to run the **Build HCI** pipeline.
 Additionally, you can also run the **Build Monitoring** pipeline to create monitoring resources for the AKS HCI cluster by enabling the **Start 'Build Monitoring' Workflow** checkbox.
 
+> **Troubleshooting:** If you encounter any issues during the deployment and the VM extension execution fails, delete the HCIBox-Client VM´s customextension "vmHyperVInstall" and restart the VM and re-run the workflow. Also note that the VM extension execution times out after 90 minutes and the workflow will fail but the installation process will continue on the HCIBox-Client VM.
+
 <img src='img/build-hci.png' width='25%' height='25%'>
 
 ### Image Creation
