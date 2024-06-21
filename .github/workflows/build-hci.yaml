@@ -18,7 +18,7 @@ on:
         default: rg-arc-footprint-hci
         required: true
       createMonitoring:
-        description: 'Create Monitoring Resources'
+        description: Create Monitoring Resources \n Start 'Build Monitoring' workflow
         type: boolean
         default: false
         required: true
