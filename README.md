@@ -120,7 +120,10 @@ Since nested virtualization is required to install AKS-EE on Windows, you need t
 This repo also supports the creation of an [Azure Stack HCI](https://learn.microsoft.com/en-us/azure-stack/hci/overview) environment.
 It utilizes the [Azure Arc Jumpstart HCIBox](https://arcjumpstart.com/azure_jumpstart_hcibox) resources to create an AKS HCI cluster on Azure Stack HCI and is fully automated by the GitHub Actions workflows.
 To start the deployment of an Azure Stack HCI sandbox which installs Azure IoT Operations on top of it, you need to run the **Build HCI** pipeline.
-Additionally, you can also run the **Build Monitoring** pipeline to create monitoring resources for the AKS HCI cluster by enabling the **Start 'Build Monitoring' Workflow** checkbox.
+
+Additionally, you can also run the **Build Monitoring** pipeline to create monitoring resources for the AKS HCI cluster by enabling the **Start 'Build Monitoring' Workflow** checkbox.\
+This workflow also exposes measures of the memory for the HCIBox-Client VM.\
+You can find more details in the [Monitoring](#monitoring) section.
 
 > **Troubleshooting:** If you encounter any issues during the deployment and the VM extension execution fails, delete the HCIBox-Client VM´s customextension "vmHyperVInstall" and restart the VM and re-run the workflow. Also note that the VM extension execution times out after 90 minutes and the workflow will fail but the installation process will continue on the HCIBox-Client VM.
 
@@ -155,8 +158,12 @@ Monitoring resources creation is automatically triggered via separate pipeline, 
 
 ### Monitoring
 
-Azure Monitoring resources like Log Analytics and Grafana are created by the **Build Monitoring** pipeline. This workflow is automatically triggered by the **Build VM** pipeline but you have the chance to manually run it as well.
+Azure Monitoring resources like Log Analytics and Grafana are created by the **Build Monitoring** pipeline. This workflow is automatically triggered by the **Build VM** pipeline.
 You can also run the **Build Monitoring** workflow manually to create monitoring resources for an existing cluster.
+
+It deploys the [Azure Monitor Extension](https://learn.microsoft.com/en-us/azure/azure-monitor/containers/kubernetes-monitoring-enable?tabs=cli#arc-enabled-cluster) for Arc-enabled clusters and the [Azure Monitor Agent](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/agents-overview) as extension for VMs.
+
+Additionally, the Windows OS images are prepared with the Windows Assessment and Deployment Kit ([Windows ADK](https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install)) to expose the host memory metrics to the Log Analytics workspace via DataCollection Rules. On Linux those metrics are available out-of-the-box in the file system of the OS itself.
 
 > Note: This pipeline will skip installing the azuremonitor-extension for arc-clusters if the provided cluster is not found
 
@@ -164,7 +171,9 @@ You can also run the **Build Monitoring** workflow manually to create monitoring
 
 #### Grafana Dashboard
 
-After running the Build-VM (or manually running the Build-Monitoring) pipeline, you should be equipped with a Grafana dashboard. In order to access the dashboard, users must have at least "Grafana Reader" role.
+After running the Build-VM (or manually running the Build-Monitoring) pipeline, you should be equipped with a Grafana dashboard that is uses the Prometheus endpoint of Azure Monitor as datasource to retrieve the metrics.
+
+In order to access the dashboard, users must have at least "Grafana Reader" role.
 
 ```sh
 # Assign the signed-in user appropriate Grafana role with az cli
