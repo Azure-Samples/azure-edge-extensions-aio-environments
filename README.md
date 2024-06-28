@@ -28,7 +28,7 @@ This infrastructure enables you to install instrumentation tools and collect mem
 Execute the PowerShell script [`./setup.ps1`](./setup.ps1):
 
 ```powershell
-./setup.ps1 -ForkedRepo <owner/forked-repo-name> -SubscriptionId <subid> -ServicePrincipalName <name-for-new-sp> - HciAksGroupName <hci-aks-groupname> -VmAdminUsername <vm-usrname> -VmAdminPassword <vm-usrpassword>
+./setup.ps1 -ForkedRepo <owner/forked-repo-name> -SubscriptionId <subid> -ServicePrincipalName <name-for-new-sp> -HciAksGroupName <hci-aks-groupname> -VmAdminUsername <vm-usrname> -VmAdminPassword <vm-usrpassword>
 ```
 
 ```sh
