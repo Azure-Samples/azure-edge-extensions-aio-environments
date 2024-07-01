@@ -155,7 +155,11 @@ jobs:
           --admin-username $adminUsername \
           --admin-password $adminPassword \
           --assign-identity $identity
-    
+
+    - name: Install HCI Box
+      run: |
+        hciRPObjectId="$(az ad sp list --display-name "Microsoft.AzureStackHCI Resource Provider" | jq -r '.[].id')"
+        
     - name: Install provider extensions
       run: |
         az provider register -n "Microsoft.ExtendedLocation"
@@ -191,7 +195,7 @@ jobs:
             --name CustomScriptExtension \
             --publisher Microsoft.Compute \
             --force-update \
-            --settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \
+            --protected-settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \
                 kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
                 az login --identity; \
                 az extension add --name connectedk8s; \
@@ -210,7 +214,7 @@ jobs:
             --name customScript \
             --publisher Microsoft.Azure.Extensions \
             --force-update \
-            --settings "{\"commandToExecute\": \" \
+            --protected-settings "{\"commandToExecute\": \" \
                 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
                 kubectl delete node \$(kubectl get nodes | grep NotReady | awk '{print \$1}') && \
                 kubectl config use-context default && \
@@ -231,4 +235,5 @@ jobs:
     with:
       clusterName: ${{ needs.Build-VM.outputs.clusterName }}
       vmName: ${{ needs.Build-VM.outputs.vmName }}
+      resourceGroupName: ${{ needs.Build-VM.outputs.resourceGroup }}
     secrets: inherit
