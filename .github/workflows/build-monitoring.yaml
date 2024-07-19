@@ -45,5 +45,11 @@ jobs:
         az extension add --name amg
     - name: Create Azure Monitor and Grafana resources
       run: bash ${GITHUB_WORKSPACE}/scripts/configure-azmon-grafana.sh -g $resourceGroup -m $monitorName -d $grafanaName -c $clusterName
+    - name: Create Azure Monitor for VM
+      run: bash ${GITHUB_WORKSPACE}/scripts/configure-vm-azmon.sh -v $vmName -g $resourceGroup -m $monitorName
     - name: Configure hostmemusage collection
-      run: bash ${GITHUB_WORKSPACE}/scripts/configure-vm-hostmemusage-collector.sh -v $vmName -g $resourceGroup -l $logAnalytics -m $monitorName
+      run: |
+        vmResource=$(az vm show --name $vmName --resource-group $resourceGroup | jq -c .)
+        osType=$(echo $vmResource | jq -r .storageProfile.osDisk.osType)
+        vmId=$(echo $vmResource | jq -r .id)
+        bash ${GITHUB_WORKSPACE}/scripts/configure-vm-hostmemusage-collector.sh -v $vmId -g $resourceGroup -l $logAnalytics -m $monitorName -o $osType
