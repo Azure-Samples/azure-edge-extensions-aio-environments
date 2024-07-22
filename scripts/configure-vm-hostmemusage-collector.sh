@@ -8,11 +8,12 @@ Usage() {
   echo "Options:"
   echo "  -g| Azure resource group (required)"
   echo "  -m| Azure monitor resource name (required)"
-  echo "  -v| Azure VM name (required)"
+  echo "  -v| Azure VM ID (required)"
   echo "  -l| Log analytics workspace name (default: la-footprint)"
+  echo "  -o| OS Type (default: Windows)"
 }
 
-while getopts ":g:m:v:l:" opt; do
+while getopts ":g:m:v:l:o:" opt; do
   case $opt in
   g)
     resourceGroup=$OPTARG
@@ -21,10 +22,13 @@ while getopts ":g:m:v:l:" opt; do
     monitorName=$OPTARG
     ;;
   v)
-    vmName=$OPTARG
+    vmId=$OPTARG
     ;;
   l)
     laName=$OPTARG
+    ;;
+  o)
+    osType=$OPTARG
     ;;
   \?)
     echo "Invalid option -$OPTARG" >&2
@@ -40,7 +44,7 @@ while getopts ":g:m:v:l:" opt; do
   esac
 done
 
-if [[ $OPTIND -eq 1 || -z $resourceGroup || -z $vmName || -z $monitorName ]]; then
+if [[ $OPTIND -eq 1 || -z $resourceGroup || -z $vmId || -z $monitorName ]]; then
   Usage
   exit 1
 fi
@@ -49,17 +53,12 @@ laName="${laName:-la-footprint}"
 BASEDIR=$(dirname $0)
 
 monitor_resource=$(az resource show --resource-type Microsoft.monitor/accounts --name $monitorName --resource-group $resourceGroup | jq -c .)
-vmResource=$(az vm show --name $vmName --resource-group $resourceGroup | jq -c .)
-osType=$(echo $vmResource | jq -r .storageProfile.osDisk.osType)
+vmResource=$(az resource show --ids $vmId)
+vmName=$(echo $vmResource | jq -r .name)
+vmResourceGroup=$(echo $vmResource | jq -r .resourceGroup)
+osType="${osType:-Windows}"
 ruleName="$vmName-hostmemcollector"
 subscriptionId=$(az account show --query id -o tsv)
-
-agent=AzureMonitor${osType}Agent
-if [[ -z $(az vm extension show --name $agent --vm-name $vmName -g $resourceGroup 2>/dev/null | jq .name) ]]; then
-  echo "Installing AzureMonitor agent extension on $vmName..."
-  az vm extension set --name $agent --publisher Microsoft.Azure.Monitor --vm-name $vmName -g $resourceGroup
-fi
-echo $agent installed.
 
 grafanaName=$(az grafana list --query "[?resourceGroup=='$resourceGroup'].name" -o tsv)
 if [ -z $grafanaName ]; then
@@ -69,8 +68,8 @@ else
   echo "Grafana resource ($grafanaName) found. Use existing..."
 fi
 
-allDashboardName="Memory Footprint"
-hostDashboardName="Memory Footprint - Host"
+allDashboardName="Memory Footprint $osType"
+hostDashboardName="Memory Footprint - Host $osType"
 echo "Creating grafana dashboard..."
 sed -i "s/##SUBSCRIPTION_ID##/$subscriptionId/g" monitoring/mem_by_all.json
 sed -i "s/##SUBSCRIPTION_ID##/$subscriptionId/g" monitoring/mem_by_proc.json
@@ -89,7 +88,7 @@ if [ $osType == "Linux" ]; then
   sed -i "s?##TABLE_QUERY##?$t_query?g" monitoring/mem_by_proc.json
   sed -i "s/##MEM_UNIT##/decbytes/g" monitoring/mem_by_proc.json
 else
-  echo "Windows OS detected. Using Linux queries..."
+  echo "Windows OS detected. Using Windows queries..."
   echo $ts_query
   echo $t_query
   ts_query='ResidentSetSummary_CL\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| summarize Memory=sum(SizeMB)*1024 by TraceProcessName, TimeGenerated\\r\\n| order by TimeGenerated asc'
@@ -143,17 +142,16 @@ else
   echo "Log analytics table already exists"
 fi
 
-ruleId=$(az monitor data-collection rule show --name $ruleName -g $resourceGroup 2>/dev/null | jq -r .id)
+ruleId=$(az monitor data-collection rule show --name $ruleName -g $vmResourceGroup 2>/dev/null | jq -r .id)
 dataCollectionEndpointId=$(echo $monitor_resource | jq -r .properties.defaultIngestionSettings.dataCollectionEndpointResourceId)
 if [ -z $ruleId ]; then
   echo "Creating data collection rule..."
-  ruleId=$(az deployment group create -n hostmemdc -g $resourceGroup --template-file $BASEDIR/hostmemcollector.$osType.bicep \
+  ruleId=$(az deployment group create -n hostmemdc -g $vmResourceGroup --template-file $BASEDIR/hostmemcollector.$osType.bicep \
     --parameters ruleName=$ruleName dataCollectionEndpointId=$dataCollectionEndpointId logAnalyticsWorkspaceId=$laId | jq -r '.properties.outputResources[0].id')
 else
   echo "Data collection rule found: $ruleId"
 fi
 
-vmId=$(echo $vmResource | jq -r .id)
 if [[ -z $(az monitor data-collection rule association show --name configurationAccessEndpoint --resource $vmId 2>/dev/null | jq .name) ]]; then
   echo "Associate vm $vmId with rule..."
   az monitor data-collection rule association create --name configurationAccessEndpoint --resource $vmId --endpoint-id $dataCollectionEndpointId
