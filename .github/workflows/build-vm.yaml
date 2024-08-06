@@ -83,7 +83,7 @@ jobs:
       vmSize: ${{ inputs.vmSize }}
       adminUsername: ${{ secrets.VMADMINUSERNAME }}
       adminPassword: ${{ secrets.VMADMINPASSWORD }}
-      clusterName: "aksEEAIO-${{github.run_id}}"
+      clusterName: "aksaio-${{github.run_id}}"
       kvName: "kv-${{github.run_id}}"
       vmIdentityName: ${{ inputs.vmName }}-id
       grafanaDashboardName: footprint-${{github.run_id}}
