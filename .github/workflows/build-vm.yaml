@@ -224,11 +224,11 @@ jobs:
             \"}"
         fi
 
-  Build-Monitoring:
-    uses: ./.github/workflows/build-monitoring.yaml
-    needs: Build-VM
-    with:
-      clusterName: ${{ needs.Build-VM.outputs.clusterName }}
-      vmName: ${{ needs.Build-VM.outputs.vmName }}
-      resourceGroupName: ${{ needs.Build-VM.outputs.resourceGroup }}
-    secrets: inherit
+  # Build-Monitoring:
+  #   uses: ./.github/workflows/build-monitoring.yaml
+  #   needs: Build-VM
+  #   with:
+  #     clusterName: ${{ needs.Build-VM.outputs.clusterName }}
+  #     vmName: ${{ needs.Build-VM.outputs.vmName }}
+  #     resourceGroupName: ${{ needs.Build-VM.outputs.resourceGroup }}
+  #   secrets: inherit
