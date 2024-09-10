@@ -79,7 +79,7 @@ fi
 
 grafanaIdentity=$(echo $grafana | jq -r '.identity.principalId')
 echo "Grafana identity: $grafanaIdentity"
-az role assignment create --assignee $grafanaIdentity --role "Monitoring Data Reader" --scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroup
+az role assignment create --assignee $grafanaIdentity --assignee-principal-type ServicePrincipal --role "Monitoring Data Reader" --scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroup
 
 if [[ -z $(az grafana data-source show -n $grafanaName --data-source "Azure Managed Prometheus-1" 2>/dev/null | jq .name) ]]; then
   echo "Adding prometheus data source to Grafana..."
