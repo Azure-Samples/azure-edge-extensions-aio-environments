@@ -71,7 +71,7 @@ fi
 grafana=$(az grafana list --query "[?resourceGroup=='$resourceGroup']" -o json | jq -c '.[0]')
 if [ -z $(az grafana list --query "[?resourceGroup=='$resourceGroup'].name" -o tsv) ]; then
   echo "Creating Grafana resource in azure..."
-  grafana=$(az grafana create -n $grafanaName -g $resourceGroup | jq -c .)
+  grafana=$(az grafana create -n $grafanaName -g $resourceGroup --skip-role-assignments | jq -c .)
 else
   grafanaName=$(echo $grafana | jq -r .name)
   echo "Grafana resource ($grafanaName) found. Use existing..."
@@ -79,7 +79,7 @@ fi
 
 grafanaIdentity=$(echo $grafana | jq -r '.identity.principalId')
 echo "Grafana identity: $grafanaIdentity"
-az role assignment create --assignee-object-id $grafanaIdentity --assignee-principal-type ServicePrincipal --role "Monitoring Data Reader" --scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroup
+az role assignment create --assignee $grafanaIdentity --role "Monitoring Data Reader" --scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroup
 
 if [[ -z $(az grafana data-source show -n $grafanaName --data-source "Azure Managed Prometheus-1" 2>/dev/null | jq .name) ]]; then
   echo "Adding prometheus data source to Grafana..."
