@@ -427,6 +427,13 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
       }
       {
         type: 'PowerShell'
+        name: 'Install Kubectl'
+        inline: [
+          'winget install -e --id Kubernetes.kubectl'
+        ]
+      }
+      {
+        type: 'PowerShell'
         name: 'AzSetup'
         inline: [
           'Invoke-WebRequest -Uri https://secure.globalsign.net/cacert/Root-R1.crt -OutFile c:\\globalsignR1.crt'

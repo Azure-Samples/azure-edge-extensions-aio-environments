@@ -85,6 +85,8 @@ jobs:
       adminPassword: ${{ secrets.VMADMINPASSWORD }}
       clusterName: "aksaio-${{github.run_id}}"
       kvName: "kv-${{github.run_id}}"
+      saName: "sa${{github.run_id}}"
+      srName: "sr-${{github.run_id}}"
       vmIdentityName: ${{ inputs.vmName }}-id
       grafanaDashboardName: footprint-${{github.run_id}}
       monitorName: footprint
@@ -161,7 +163,6 @@ jobs:
         az provider register -n "Microsoft.ExtendedLocation"
         az provider register -n "Microsoft.Kubernetes";
         az provider register -n "Microsoft.KubernetesConfiguration";
-        az provider register -n "Microsoft.IoTOperationsOrchestrator";
         az provider register -n "Microsoft.IoTOperations";
         az provider register -n "Microsoft.DeviceRegistry";
         az provider register -n "Microsoft.Insights";
@@ -174,14 +175,6 @@ jobs:
         osType=$(az vm show -g $resourceGroup -n $vmName --query storageProfile.osDisk.osType -o tsv)
         principalId=$(az identity show --name $vmIdentityName -g $resourceGroup --query principalId -o tsv)
 
-        echo "Creating keyvault..."
-        kvId=$(az keyvault create --enable-rbac-authorization false -n $kvName -g $resourceGroup -o tsv --no-self-perms --query id -o tsv)
-        az keyvault set-policy -n $kvName -g $resourceGroup --object-id ${{ secrets.AZURE_SP_OBJECT_ID }} --secret-permissions all --key-permissions all --storage-permissions all --certificate-permissions all
-        az keyvault set-policy -n $kvName -g $resourceGroup --object-id $principalId --secret-permissions all --key-permissions all --storage-permissions all --certificate-permissions all
-        
-        echo "Encode secret for security reasons..."
-        encodedBase64Secret=$(echo ${{ secrets.AZURE_SP_CLIENT_SECRET }} | base64)
-
         echo "Creating VM extension for $osType with force update..."
         if [ $osType == "Windows" ]; then
           az vm extension set \
@@ -193,14 +186,16 @@ jobs:
             --protected-settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \
                 kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
                 az login --identity; \
-                az extension add --name connectedk8s; \
-                az extension add --name azure-iot-ops; \
+                az extension add --name connectedk8s --yes; \
+                az extension add --name azure-iot-ops --version 0.7.0b1 --yes; \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
                 Remove-Item -LiteralPath C:\\Windows\\System32\\config\\systemprofile\\.azure\\AzureArcCharts -Recurse -Force; \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
                 \$env:KUBECONFIG='C:\\Scripts\\config'; \
-                \$decodedSecret = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('$encodedBase64Secret')); \
-                az iot ops init --simulate-plc --no-progress --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\"; \
+                saId=$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id); \
+                srId=$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"$saId\"\" -o tsv --query id); \
+                az iot ops init --no-progress --debug --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"$srId\"\" --kubernetes-distro K3s; \
+                az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup; \
             \"}"
         else
           az vm extension set \
@@ -216,11 +211,14 @@ jobs:
                 kubectl get pods -A -v6 && \
                 decodedSecret=\$(echo $encodedBase64Secret | base64 -d) && \
                 az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"\$decodedSecret\"\" --tenant $tenantId && \
-                az extension add --name connectedk8s && \
-                az extension add --name azure-iot-ops && \
+                az extension add --name connectedk8s --yes && \
+                az extension add --name azure-iot-ops --version 0.7.0b1 --yes && \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
-                az iot ops init --simulate-plc --debug --cluster $clusterName -g $resourceGroup --kv-id \"\"$kvId\"\" --sp-app-id \"\"${{ secrets.AZURE_SP_CLIENT_ID }}\"\" --sp-object-id \"\"${{ secrets.AZURE_SP_OBJECT_ID }}\"\" --sp-secret \"\"\$decodedSecret\"\" --no-progress \
+                saId=$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id) && \
+                srId=$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"$saId\"\" -o tsv --query id) && \
+                az iot ops init --debug --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"$srId\"\" --kubernetes-distro K3s --no-progress && \
+                az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup \
             \"}"
         fi
 
