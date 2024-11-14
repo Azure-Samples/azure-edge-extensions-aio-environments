@@ -187,7 +187,7 @@ jobs:
                 kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
                 az login --identity; \
                 az extension add --name connectedk8s --yes; \
-                az extension add --name azure-iot-ops --version 0.8.0b1 --yes; \
+                az extension add --name azure-iot-ops --yes; \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
                 Remove-Item -LiteralPath C:\\Windows\\System32\\config\\systemprofile\\.azure\\AzureArcCharts -Recurse -Force; \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
@@ -212,7 +212,7 @@ jobs:
                 decodedSecret=\$(echo $encodedBase64Secret | base64 -d) && \
                 az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"\$decodedSecret\"\" --tenant $tenantId && \
                 az extension add --name connectedk8s --yes && \
-                az extension add --name azure-iot-ops --version 0.8.0b1 --yes && \
+                az extension add --name azure-iot-ops --yes && \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
                 saId=$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id) && \

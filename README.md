@@ -1,9 +1,6 @@
 # Pre-Built Azure IoT Operations Environments
 
-> [!IMPORTANT]  
-> This repositories is compatible with Azure IoT Operations Preview [v0.8.32](https://github.com/Azure/azure-iot-operations/releases/tag/v0.8.32).
-
-This repository sets up the infrastructure to create vhdx images and VMs for Azure IoT Operations on Arc-enabled servers.
+This repository sets up the infrastructure to create vhdx images and VMs for [Azure IoT Operations](https://learn.microsoft.com/en-us/azure/iot-operations/overview-iot-operations) on Arc-enabled servers.
 This infrastructure enables you to install instrumentation tools and collect memory dumps for applications and core components.
 
 ## Getting Started
