@@ -188,4 +188,3 @@ Two dashboards are available in the `Footprint Dashboards` folder:
 
 - *Memory Footprint - Host*: This dashboard shows the memory usage of the VM (host) processes.
 <img src='img/dashboard-host.png'>
-
