@@ -33,7 +33,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         name: 'Install K3s'
         inline: [
           'curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.28.5+k3s1 sh -'
-          'mkdir ~/.kube'
+          'mkdir -p ~/.kube'
           'sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl config view'
         ]
       }
@@ -69,7 +69,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         inline: [
           'sudo apt-get update'
           'sudo apt-get install -y ca-certificates curl'
-          'sudo mkdir "/etc/apt/keyrings"'
+          'sudo mkdir -p "/etc/apt/keyrings"'
           'curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg'
           'sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg'
           'echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list'
@@ -82,7 +82,7 @@ resource azureImageBuilderTemplate 'Microsoft.VirtualMachineImages/imageTemplate
         type: 'Shell'
         name: 'New dir'
         inline: [
-          'sudo mkdir $HOME/hostmem'
+          'sudo mkdir -p $HOME/hostmem'
         ]
       }
       {
