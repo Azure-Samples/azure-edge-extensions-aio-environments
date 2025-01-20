@@ -54,3 +54,4 @@ gh secret set CUSTOM_LOCATIONS_OBJECT_ID -b $customLocationsObjectId -R $ForkedR
 gh secret set HCI_AKS_GROUP_OBJECT_ID -b $hciboxGroupObjectId -R $ForkedRepo
 gh secret set VMADMINUSERNAME -b $VmAdminUsername -R $ForkedRepo
 gh secret set VMADMINPASSWORD -b ($VmAdminPassword | ConvertFrom-SecureString -AsPlainText) -R $ForkedRepo
+
