@@ -205,12 +205,15 @@ jobs:
             --publisher Microsoft.Azure.Extensions \
             --force-update \
             --protected-settings "{\"commandToExecute\": \" \
+                sudo chmod -R 777 /etc/rancher/k3s/k3s.yaml && \
                 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
                 kubectl config use-context default && \
                 kubectl get pods -A -v6 && \
                 az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --tenant $tenantId && \
                 az extension add --name connectedk8s --yes && \
                 az extension add --name azure-iot-ops --yes && \
+                sleep 1m && \
+                kubectl delete node \$(kubectl get nodes | grep NotReady | awk '{print \$1}') && \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
                 saId=\$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id) && \
