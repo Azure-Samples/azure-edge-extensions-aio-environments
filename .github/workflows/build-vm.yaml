@@ -158,75 +158,75 @@ jobs:
           --admin-password $adminPassword \
           --assign-identity $identity
 
-    - name: Install provider extensions
-      run: |
-        az provider register -n "Microsoft.ExtendedLocation"
-        az provider register -n "Microsoft.Kubernetes";
-        az provider register -n "Microsoft.KubernetesConfiguration";
-        az provider register -n "Microsoft.IoTOperations";
-        az provider register -n "Microsoft.DeviceRegistry";
-        az provider register -n "Microsoft.Insights";
-        az provider register -n "Microsoft.AlertsManagement";
+  #   - name: Install provider extensions
+  #     run: |
+  #       az provider register -n "Microsoft.ExtendedLocation"
+  #       az provider register -n "Microsoft.Kubernetes";
+  #       az provider register -n "Microsoft.KubernetesConfiguration";
+  #       az provider register -n "Microsoft.IoTOperations";
+  #       az provider register -n "Microsoft.DeviceRegistry";
+  #       az provider register -n "Microsoft.Insights";
+  #       az provider register -n "Microsoft.AlertsManagement";
 
-    - name: Install AIO
-      run: |
-        subscriptionId=$(az account show --query id -o tsv)
-        tenantId=$(az account show --query tenantId -o tsv)
-        osType=$(az vm show -g $resourceGroup -n $vmName --query storageProfile.osDisk.osType -o tsv)
-        principalId=$(az identity show --name $vmIdentityName -g $resourceGroup --query principalId -o tsv)
+  #   - name: Install AIO
+  #     run: |
+  #       subscriptionId=$(az account show --query id -o tsv)
+  #       tenantId=$(az account show --query tenantId -o tsv)
+  #       osType=$(az vm show -g $resourceGroup -n $vmName --query storageProfile.osDisk.osType -o tsv)
+  #       principalId=$(az identity show --name $vmIdentityName -g $resourceGroup --query principalId -o tsv)
 
-        echo "Creating VM extension for $osType with force update..."
-        if [ $osType == "Windows" ]; then
-          az vm extension set \
-            --resource-group $resourceGroup \
-            --vm-name $vmName \
-            --name CustomScriptExtension \
-            --publisher Microsoft.Compute \
-            --force-update \
-            --protected-settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \
-                kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
-                az login --identity; \
-                az extension add --name connectedk8s --yes; \
-                az extension add --name azure-iot-ops --yes; \
-                az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
-                Remove-Item -LiteralPath C:\\Windows\\System32\\config\\systemprofile\\.azure\\AzureArcCharts -Recurse -Force; \
-                az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
-                \$env:KUBECONFIG='C:\\Scripts\\config'; \
-                saId=\$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id); \
-                srId=\$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"\$saId\"\" -o tsv --query id); \
-                az iot ops init --no-progress --debug --cluster $clusterName -g $resourceGroup; \
-                az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"\$srId\"\" --kubernetes-distro K3s; \
-            \"}"
-        else
-          az vm extension set \
-            --resource-group $resourceGroup \
-            --vm-name $vmName \
-            --name customScript \
-            --publisher Microsoft.Azure.Extensions \
-            --force-update \
-            --protected-settings "{\"commandToExecute\": \" \
-                sudo chmod -R 777 /etc/rancher/k3s/k3s.yaml && \
-                export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
-                kubectl delete node \$(kubectl get nodes | grep NotReady | awk '{print \$1}') && \
-                kubectl config use-context default && \
-                kubectl get pods -A -v6 && \
-                az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --tenant $tenantId && \
-                az extension add --name connectedk8s --yes && \
-                az extension add --name azure-iot-ops --yes && \
-                az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
-                az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
-                saId=\$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id) && \
-                srId=\$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"\$saId\"\" -o tsv --query id) && \
-                az iot ops init --debug --cluster $clusterName -g $resourceGroup --no-progress && \
-                az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"\$srId\"\" --kubernetes-distro K3s \
-            \"}"
-        fi
+  #       echo "Creating VM extension for $osType with force update..."
+  #       if [ $osType == "Windows" ]; then
+  #         az vm extension set \
+  #           --resource-group $resourceGroup \
+  #           --vm-name $vmName \
+  #           --name CustomScriptExtension \
+  #           --publisher Microsoft.Compute \
+  #           --force-update \
+  #           --protected-settings "{\"commandToExecute\":\"powershell Get-AksEdgeKubeConfig -KubeConfigPath C:\\Scripts -Confirm:\$false; \
+  #               kubectl get pods -A -v6 --kubeconfig C:\\scripts\\config; \
+  #               az login --identity; \
+  #               az extension add --name connectedk8s --yes; \
+  #               az extension add --name azure-iot-ops --yes; \
+  #               az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --kube-config C:\\Scripts\\config --subscription $subscriptionId; \
+  #               Remove-Item -LiteralPath C:\\Windows\\System32\\config\\systemprofile\\.azure\\AzureArcCharts -Recurse -Force; \
+  #               az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
+  #               \$env:KUBECONFIG='C:\\Scripts\\config'; \
+  #               saId=\$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id); \
+  #               srId=\$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"\$saId\"\" -o tsv --query id); \
+  #               az iot ops init --no-progress --debug --cluster $clusterName -g $resourceGroup; \
+  #               az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"\$srId\"\" --kubernetes-distro K3s; \
+  #           \"}"
+  #       else
+  #         az vm extension set \
+  #           --resource-group $resourceGroup \
+  #           --vm-name $vmName \
+  #           --name customScript \
+  #           --publisher Microsoft.Azure.Extensions \
+  #           --force-update \
+  #           --protected-settings "{\"commandToExecute\": \" \
+  #               sudo chmod -R 777 /etc/rancher/k3s/k3s.yaml && \
+  #               export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
+  #               kubectl delete node \$(kubectl get nodes | grep NotReady | awk '{print \$1}') && \
+  #               kubectl config use-context default && \
+  #               kubectl get pods -A -v6 && \
+  #               az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --tenant $tenantId && \
+  #               az extension add --name connectedk8s --yes && \
+  #               az extension add --name azure-iot-ops --yes && \
+  #               az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
+  #               az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
+  #               saId=\$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id) && \
+  #               srId=\$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"\$saId\"\" -o tsv --query id) && \
+  #               az iot ops init --debug --cluster $clusterName -g $resourceGroup --no-progress && \
+  #               az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"\$srId\"\" --kubernetes-distro K3s \
+  #           \"}"
+  #       fi
 
-  Build-Monitoring:
-    uses: ./.github/workflows/build-monitoring.yaml
-    needs: Build-VM
-    with:
-      clusterName: ${{ needs.Build-VM.outputs.clusterName }}
-      vmName: ${{ needs.Build-VM.outputs.vmName }}
-      resourceGroupName: ${{ needs.Build-VM.outputs.resourceGroup }}
-    secrets: inherit
+  # Build-Monitoring:
+  #   uses: ./.github/workflows/build-monitoring.yaml
+  #   needs: Build-VM
+  #   with:
+  #     clusterName: ${{ needs.Build-VM.outputs.clusterName }}
+  #     vmName: ${{ needs.Build-VM.outputs.vmName }}
+  #     resourceGroupName: ${{ needs.Build-VM.outputs.resourceGroup }}
+  #   secrets: inherit
