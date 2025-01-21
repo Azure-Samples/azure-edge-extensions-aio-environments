@@ -206,6 +206,7 @@ jobs:
             --force-update \
             --protected-settings "{\"commandToExecute\": \" \
                 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
+                sudo chmod -R 777 /etc/rancher/k3s/k3s.yaml && \
                 kubectl delete node \$(kubectl get nodes | grep NotReady | awk '{print \$1}') && \
                 kubectl config use-context default && \
                 kubectl get pods -A -v6 && \
