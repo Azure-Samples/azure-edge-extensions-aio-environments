@@ -102,71 +102,71 @@ jobs:
       uses: azure/login@v1
       with:
         creds: '{"clientId":"${{ secrets.AZURE_SP_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_SP_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
-    # - name: Validate parameters
-    #   run: |
-    #     echo "Checking if VM already exists..."
-    #     vm=$(az vm show -n $vmName -g $resourceGroup 2>/dev/null | jq -r .name)
-    #     if [ -n "$vm" ]; then
-    #       echo "Error: VM $vmName in RG $resourceGroup already exists. Please delete existing VM or re-run with different name."
-    #       exit 1
-    #     fi
-    #     echo "VM parameters are valid..."
-    # - name: Wait for Image to be created
-    #   run: |
-    #     echo "Wait for image to be created..."
-    #     az sig image-version wait --created --resource-group $galleryResourceGroup \
-    #     --gallery-name $galleryName --gallery-image-definition $imageDefinitionName \
-    #     --gallery-image-version $imageVersion
-    # - name: Create VM
-    #   run: |
-    #     subscriptionId=$(az account show --query id -o tsv)
+    - name: Validate parameters
+      run: |
+        echo "Checking if VM already exists..."
+        vm=$(az vm show -n $vmName -g $resourceGroup 2>/dev/null | jq -r .name)
+        if [ -n "$vm" ]; then
+          echo "Error: VM $vmName in RG $resourceGroup already exists. Please delete existing VM or re-run with different name."
+          exit 1
+        fi
+        echo "VM parameters are valid..."
+    - name: Wait for Image to be created
+      run: |
+        echo "Wait for image to be created..."
+        az sig image-version wait --created --resource-group $galleryResourceGroup \
+        --gallery-name $galleryName --gallery-image-definition $imageDefinitionName \
+        --gallery-image-version $imageVersion
+    - name: Create VM
+      run: |
+        subscriptionId=$(az account show --query id -o tsv)
 
-    #     if [ !$(az group exists -n $resourceGroup) ]; then
-    #       echo "Creating RG $resourceGroup..."
-    #       az group create -n $resourceGroup -l $location
-    #     fi
+        if [ !$(az group exists -n $resourceGroup) ]; then
+          echo "Creating RG $resourceGroup..."
+          az group create -n $resourceGroup -l $location
+        fi
 
-    #     imgDef="/subscriptions/$subscriptionId/resourceGroups/$galleryResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/$imageDefinitionName/versions/$imageVersion"
+        imgDef="/subscriptions/$subscriptionId/resourceGroups/$galleryResourceGroup/providers/Microsoft.Compute/galleries/$galleryName/images/$imageDefinitionName/versions/$imageVersion"
 
-    #     echo "Checking identity exists?..."
-    #     identity=$(az identity list --query "[?name=='$vmIdentityName'&&resourceGroup=='$resourceGroup'].id" -o tsv)
+        echo "Checking identity exists?..."
+        identity=$(az identity list --query "[?name=='$vmIdentityName'&&resourceGroup=='$resourceGroup'].id" -o tsv)
 
-    #     if [ -z $identity ]; then
-    #       echo "Creating identity $vmIdentityName..."
-    #       identity="$(az identity create --name $vmIdentityName -g $resourceGroup --query id -o tsv)"
-    #     else
-    #       echo "Identity ($vmIdentityName) already exists"
-    #     fi
+        if [ -z $identity ]; then
+          echo "Creating identity $vmIdentityName..."
+          identity="$(az identity create --name $vmIdentityName -g $resourceGroup --query id -o tsv)"
+        else
+          echo "Identity ($vmIdentityName) already exists"
+        fi
 
-    #     echo "Fetching principalId..."
-    #     principalId="$(az identity show --name $vmIdentityName -g $resourceGroup --query principalId -o tsv)"
+        echo "Fetching principalId..."
+        principalId="$(az identity show --name $vmIdentityName -g $resourceGroup --query principalId -o tsv)"
 
-    #     echo "Creating role assignment for $vmIdentityName (principalId: $principalId)..."
-    #     az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role "Owner" --scope /subscriptions/$subscriptionId
-    #     az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role "Owner" --scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroup
+        echo "Creating role assignment for $vmIdentityName (principalId: $principalId)..."
+        az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role "Owner" --scope /subscriptions/$subscriptionId
+        az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role "Owner" --scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroup
 
-    #     echo "Creating VM..."
-    #     az vm create \
-    #       --resource-group $resourceGroup \
-    #       --name $vmName \
-    #       --image $imgDef \
-    #       --size $vmSize \
-    #       --security-type TrustedLaunch \
-    #       --enable-secure-boot true \
-    #       --enable-vtpm true \
-    #       --admin-username $adminUsername \
-    #       --admin-password $adminPassword \
-    #       --assign-identity $identity
+        echo "Creating VM..."
+        az vm create \
+          --resource-group $resourceGroup \
+          --name $vmName \
+          --image $imgDef \
+          --size $vmSize \
+          --security-type TrustedLaunch \
+          --enable-secure-boot true \
+          --enable-vtpm true \
+          --admin-username $adminUsername \
+          --admin-password $adminPassword \
+          --assign-identity $identity
 
-    # - name: Install provider extensions
-    #   run: |
-    #     az provider register -n "Microsoft.ExtendedLocation"
-    #     az provider register -n "Microsoft.Kubernetes";
-    #     az provider register -n "Microsoft.KubernetesConfiguration";
-    #     az provider register -n "Microsoft.IoTOperations";
-    #     az provider register -n "Microsoft.DeviceRegistry";
-    #     az provider register -n "Microsoft.Insights";
-    #     az provider register -n "Microsoft.AlertsManagement";
+    - name: Install provider extensions
+      run: |
+        az provider register -n "Microsoft.ExtendedLocation"
+        az provider register -n "Microsoft.Kubernetes";
+        az provider register -n "Microsoft.KubernetesConfiguration";
+        az provider register -n "Microsoft.IoTOperations";
+        az provider register -n "Microsoft.DeviceRegistry";
+        az provider register -n "Microsoft.Insights";
+        az provider register -n "Microsoft.AlertsManagement";
 
     - name: Install AIO
       run: |
@@ -192,10 +192,10 @@ jobs:
                 Remove-Item -LiteralPath C:\\Windows\\System32\\config\\systemprofile\\.azure\\AzureArcCharts -Recurse -Force; \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
                 \$env:KUBECONFIG='C:\\Scripts\\config'; \
-                saId=\"\"\$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id)\"\"; \
-                srId=\"\"\$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"$saId\"\" -o tsv --query id)\"\"; \
+                saId=\$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id); \
+                srId=\$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"\$saId\"\" -o tsv --query id); \
                 az iot ops init --no-progress --debug --cluster $clusterName -g $resourceGroup; \
-                az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"$srId\"\" --kubernetes-distro K3s; \
+                az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"\$srId\"\" --kubernetes-distro K3s; \
             \"}"
         else
           az vm extension set \
