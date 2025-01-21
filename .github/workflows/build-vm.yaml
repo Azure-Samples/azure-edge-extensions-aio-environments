@@ -215,7 +215,9 @@ jobs:
                 az extension add --name azure-iot-ops --yes && \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
-                saId=\$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id) \
+                test=$saName && \
+                rg=$resourceGroup && \
+                saId=\$(az storage account create -n \$test -g \$rg --enable-hierarchical-namespace -o tsv --query id) && \
             \"}"
         fi
 
