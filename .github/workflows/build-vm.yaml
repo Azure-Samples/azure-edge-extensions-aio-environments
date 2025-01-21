@@ -192,8 +192,8 @@ jobs:
                 Remove-Item -LiteralPath C:\\Windows\\System32\\config\\systemprofile\\.azure\\AzureArcCharts -Recurse -Force; \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --kube-config C:\\Scripts\\config --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations; \
                 \$env:KUBECONFIG='C:\\Scripts\\config'; \
-                saId=$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id); \
-                srId=$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"$saId\"\" -o tsv --query id); \
+                saId=\"\"$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id)\"\"; \
+                srId=\"\"$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"$saId\"\" -o tsv --query id)\"\"; \
                 az iot ops init --no-progress --debug --cluster $clusterName -g $resourceGroup; \
                 az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"$srId\"\" --kubernetes-distro K3s; \
             \"}"
@@ -215,8 +215,8 @@ jobs:
                 az extension add --name azure-iot-ops --yes && \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
                 az connectedk8s enable-features --debug -n $clusterName -g $resourceGroup --custom-locations-oid \"\"${{ secrets.CUSTOM_LOCATIONS_OBJECT_ID }}\"\" --features cluster-connect custom-locations && \
-                saId=$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id) && \
-                srId=$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"$saId\"\" -o tsv --query id) && \
+                saId=\"\"$(az storage account create -n $saName -g $resourceGroup --enable-hierarchical-namespace -o tsv --query id)\"\" && \
+                srId=\"\"$(az iot ops schema registry create -n $srName -g $resourceGroup --registry-namespace $srName --sa-resource-id \"\"$saId\"\" -o tsv --query id)\"\" && \
                 az iot ops init --debug --cluster $clusterName -g $resourceGroup --no-progress && \
                 az iot ops create -n $clusterName --cluster $clusterName -g $resourceGroup --sr-resource-id \"\"$srId\"\" --kubernetes-distro K3s \
             \"}"
