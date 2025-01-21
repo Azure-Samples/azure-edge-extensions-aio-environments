@@ -204,13 +204,12 @@ jobs:
             --name customScript \
             --publisher Microsoft.Azure.Extensions \
             --force-update \
-            --settings "{\"commandToExecute\": \" \
+            --protected-settings "{\"commandToExecute\": \" \
                 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
                 kubectl delete node \$(kubectl get nodes | grep NotReady | awk '{print \$1}') && \
                 kubectl config use-context default && \
                 kubectl get pods -A -v6 && \
-                decodedSecret=\$(echo $encodedBase64Secret | base64 -d) && \
-                az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"\$decodedSecret\"\" --tenant $tenantId && \
+                az login --service-principal -u ${{ secrets.AZURE_SP_CLIENT_ID }} -p \"\"${{ secrets.AZURE_SP_CLIENT_SECRET }}\"\" --tenant $tenantId && \
                 az extension add --name connectedk8s --yes && \
                 az extension add --name azure-iot-ops --yes && \
                 az connectedk8s connect --debug -n $clusterName -l $location -g $resourceGroup --subscription $subscriptionId && \
