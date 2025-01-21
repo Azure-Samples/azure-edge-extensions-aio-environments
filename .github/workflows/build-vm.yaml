@@ -204,7 +204,7 @@ jobs:
             --name customScript \
             --publisher Microsoft.Azure.Extensions \
             --force-update \
-            --protected-settings "{\"commandToExecute\": \" \
+            --settings "{\"commandToExecute\": \" \
                 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && \
                 kubectl delete node \$(kubectl get nodes | grep NotReady | awk '{print \$1}') && \
                 kubectl config use-context default && \
